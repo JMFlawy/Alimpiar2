@@ -401,7 +401,7 @@ bindTouchButton("btnAction", "Control");
 
  updateTruckSequence() {
 const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
-const speed = isMobile ? 1.8 : 0.8;
+const speed = isMobile ? 1.8 : 1.8;
 
 // 1. El camión se acerca al contenedor amarillo.
 if (
