@@ -51,9 +51,9 @@ export default class Game {
     this.prevGamepadButtons = {};
 
     this.scene = "inside";
-    this.doorZone = { x: 2070, y: this.groundY - 90, width: 130, height: 150 };
+    this.doorZone = { x: 150, y: this.groundY - 90, width: 130, height: 150 };
     this.returnZone = { x: 0, y: this.groundY - 90, width: 150, height: 150 };
-    this.outsideSpawn = { x: 2100, y: this.groundY - 92 };
+    this.outsideSpawn = { x: 150, y: this.groundY - 92 };
     this.insideSpawn = { x: 120, y: this.groundY - 92 };
     this.transitionLock = false;
 
@@ -122,28 +122,27 @@ export default class Game {
     this.player = new Player(this.insideSpawn.x, this.insideSpawn.y);
 
     this.platforms = [
-      { x: 1340, y: this.groundY - 90, width: 200, height: 20 },
-      { x: 1040, y: this.groundY - 120, width: 200, height: 20 },
-      { x: 780, y: this.groundY - 140, width: 180, height: 20 },
-      { x: 520, y: this.groundY - 120, width: 180, height: 20 },
-      { x: 260, y: this.groundY - 140, width: 200, height: 20 }
+      { x: 1340, y: this.groundY - 120, width: 200, height: 20 },
+  { x: 1040, y: this.groundY - 140, width: 200, height: 20 },
+  { x: 780,  y: this.groundY - 120,  width: 180, height: 20 },
+  { x: 520,  y: this.groundY - 90, width: 180, height: 20 },
     ];
 
     this.containers = [
-      new Container(300, this.groundY - 85, "amarillo"),
-      new Container(700, this.groundY - 85, "azul"),
-      new Container(1100, this.groundY - 85, "verde"),
-      new Container(1500, this.groundY - 85, "marron"),
-      new Container(1900, this.groundY - 85, "gris")
+      new Container(440, this.groundY - 85, "amarillo"),
+      new Container(830, this.groundY - 85, "azul"),
+      new Container(1230, this.groundY - 85, "verde"),
+      new Container(1630, this.groundY - 85, "marron"),
+      new Container(2010, this.groundY - 85, "gris")
     ];
 
     this.trashPositions = [
       { x: 380, y: this.groundY - 30 },
-      { x: 450, y: this.groundY - 30 },
+      { x: 650, y: this.groundY - 30 },
       { x: 580, y: this.groundY - 120 - 30 },
       { x: 840, y: this.groundY - 140 - 30 },
-      { x: 1260, y: this.groundY - 120 - 30 },
-      { x: 1660, y: this.groundY - 30 }
+      { x: 1350, y: this.groundY - 140 - 30 },
+      { x: 1750, y: this.groundY - 30 }
     ];
 
     this.trashDefinitions = [
