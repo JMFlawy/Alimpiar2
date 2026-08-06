@@ -12,11 +12,6 @@ export default class Game {
     return shuffled;
   }
 
-  clampPlayerInside() {
-    if (this.scene !== "inside") return;
-    this.player.x = Math.max(0, Math.min(this.player.x, this.width - this.player.width));
-  }
-
   constructor(canvas, ctx, gameWidth, gameHeight) {
     this.canvas = canvas;
     this.ctx = ctx;
@@ -29,6 +24,7 @@ export default class Game {
     this.groundY = 420;
 
     this.cameraX = 0;
+
     this.keys = {};
 
     this.collectedItem = null;
@@ -50,7 +46,7 @@ export default class Game {
     this.gamepadButtons = {};
     this.prevGamepadButtons = {};
 
-    this.scene = "inside";
+    this.scene = "outside";
     this.doorZone = { x: 2070, y: this.groundY - 90, width: 130, height: 150 };
     this.returnZone = { x: 0, y: this.groundY - 90, width: 150, height: 150 };
     this.outsideSpawn = { x: 2100, y: this.groundY - 92 };
@@ -65,23 +61,13 @@ export default class Game {
 
     this.motherImage = new Image();
     this.motherImage.src = "assets/people/madre.png";
+
     this.fatherImage = new Image();
     this.fatherImage.src = "assets/people/padre.png";
-    this.motherImage2 = new Image();
-    this.motherImage2.src = "assets/people/madre2.png";
-    this.fatherImage2 = new Image();
-    this.fatherImage2.src = "assets/people/padre2.png";
-
-    this.talkImage = new Image();
-    this.talkImage.src = "assets/backgrounds/talk.png";
-
-    this.dialogo1Image = new Image();
-    this.dialogo1Image.src = "assets/people/dialogo1.png";
-    this.dialogo2Image = new Image();
-    this.dialogo2Image.src = "assets/people/dialogo2.png";
 
     this.enterImage = new Image();
     this.enterImage.src = "assets/backgrounds/entrar.png";
+
     this.exitImage = new Image();
     this.exitImage.src = "assets/backgrounds/salir.png";
 
@@ -100,14 +86,19 @@ export default class Game {
 
     this.groundImage = new Image();
     this.groundImage.src = "assets/backgrounds/suelo1.png";
+
     this.bushImage = new Image();
     this.bushImage.src = "assets/backgrounds/arbusto.png";
+
     this.platformImage = new Image();
     this.platformImage.src = "assets/backgrounds/plataforma.png";
+
     this.finishImage = new Image();
     this.finishImage.src = "assets/backgrounds/terminado.png";
+
     this.remainingImage = new Image();
     this.remainingImage.src = "assets/backgrounds/falta.png";
+
     this.startImage = new Image();
     this.startImage.src = "assets/backgrounds/inicio.png";
 
@@ -119,7 +110,7 @@ export default class Game {
     this.basuratSound.loop = false;
     this.basuratSound.volume = 0.9;
 
-    this.player = new Player(this.insideSpawn.x, this.insideSpawn.y);
+    this.player = new Player(this.outsideSpawn.x, this.outsideSpawn.y);
 
     this.platforms = [
       { x: 1340, y: this.groundY - 90, width: 200, height: 20 },
@@ -165,8 +156,19 @@ export default class Game {
 
     this.remainingTrash = this.trashItems.length;
 
-    this.successSounds = [new Audio("sounds/S1.mp3"), new Audio("sounds/S2.mp3"), new Audio("sounds/S3.mp3"), new Audio("sounds/S4.mp3")];
-    this.failSounds = [new Audio("sounds/No1.mp3"), new Audio("sounds/No3.mp3"), new Audio("sounds/No4.mp3")];
+    this.successSounds = [
+      new Audio("sounds/S1.mp3"),
+      new Audio("sounds/S2.mp3"),
+      new Audio("sounds/S3.mp3"),
+      new Audio("sounds/S4.mp3")
+    ];
+
+    this.failSounds = [
+      new Audio("sounds/No1.mp3"),
+      new Audio("sounds/No3.mp3"),
+      new Audio("sounds/No4.mp3")
+    ];
+
     this.finishSound = new Audio("sounds/terminado.mp3");
 
     this.finishTime = null;
@@ -198,8 +200,10 @@ export default class Game {
 
     this.truckAnimIndex = 0;
     this.truckAnimCounter = 0;
+
     this.truckX = 0;
     this.truckY = this.groundY + 100;
+
     this.truckTargetX = 400;
     this.truckLeaving = false;
     this.truckLeaveTime = null;
@@ -209,23 +213,22 @@ export default class Game {
     this.containerGlowTime = 0;
     this.containerGlowDuration = 0;
 
-    this.talkZone = { x: 300, y: this.groundY - 210, width: 220, height: 210 };
-    this.talkFrozen = false;
-    this.lastActionPressed = false;
-
     window.addEventListener("keydown", (e) => {
       if (e.key === "Escape" && this.showIntroVideo) {
         this.skipIntro();
         return;
       }
+
       if (this.showStartScreen) {
         this.startIntro();
         return;
       }
+
       if (this.sequenceFinished && this.fadeAlpha >= 1) {
         this.restartGame();
         return;
       }
+
       this.keys[e.key] = true;
     });
 
@@ -240,6 +243,7 @@ export default class Game {
     const bindTouchButton = (id, key) => {
       const button = document.getElementById(id);
       if (!button) return;
+
       const press = (e) => {
         e.preventDefault();
         this.keys[key] = true;
@@ -248,10 +252,12 @@ export default class Game {
           if (this.showStartScreen) this.startIntro();
         }
       };
+
       const release = (e) => {
         e.preventDefault();
         this.keys[key] = false;
       };
+
       button.addEventListener("touchstart", press, { passive: false });
       button.addEventListener("touchend", release, { passive: false });
       button.addEventListener("touchcancel", release, { passive: false });
@@ -265,37 +271,65 @@ export default class Game {
     bindTouchButton("btnJump", "ArrowUp");
     bindTouchButton("btnAction", "Control");
 
-    window.addEventListener("gamepadconnected", (e) => { this.gamepad = e.gamepad; });
-    window.addEventListener("gamepaddisconnected", (e) => { if (this.gamepad && e.gamepad.index === this.gamepad.index) this.gamepad = null; });
+    window.addEventListener("gamepadconnected", (e) => {
+      this.gamepad = e.gamepad;
+    });
+
+    window.addEventListener("gamepaddisconnected", (e) => {
+      if (this.gamepad && e.gamepad.index === this.gamepad.index) {
+        this.gamepad = null;
+      }
+    });
   }
 
-  start() { requestAnimationFrame(this.loop.bind(this)); }
-  loop() { this.updateGamepadState(); this.update(); this.draw(); requestAnimationFrame(this.loop.bind(this)); }
+  start() {
+    requestAnimationFrame(this.loop.bind(this));
+  }
+
+  loop() {
+    this.updateGamepadState();
+    this.update();
+    this.draw();
+    requestAnimationFrame(this.loop.bind(this));
+  }
 
   updateGamepadState() {
     if (!navigator.getGamepads) return;
     const pads = navigator.getGamepads();
     if (!pads) return;
+
     if (!this.gamepad) {
-      for (const pad of pads) if (pad) { this.gamepad = pad; break; }
+      for (const pad of pads) {
+        if (pad) {
+          this.gamepad = pad;
+          break;
+        }
+      }
       if (!this.gamepad) return;
     }
+
     const pad = navigator.getGamepads()[this.gamepad.index];
     if (!pad) return;
+
     this.prevGamepadButtons = { ...this.gamepadButtons };
     this.gamepadButtons["A"] = !!(pad.buttons[0] && pad.buttons[0].pressed);
     this.gamepadButtons["X"] = !!(pad.buttons[2] && pad.buttons[2].pressed);
     this.gamepadButtons["DLEFT"] = !!(pad.buttons[14] && pad.buttons[14].pressed);
     this.gamepadButtons["DRIGHT"] = !!(pad.buttons[15] && pad.buttons[15].pressed);
+
     const axes = pad.axes || [];
     const lx = axes[0] || 0;
     const deadzone = 0.25;
     this.gamepadButtons["LLEFT"] = lx < -deadzone;
     this.gamepadButtons["LRIGHT"] = lx > deadzone;
+
     if (this.showStartScreen) {
       let anyButtonPressed = false;
       for (let i = 0; i < pad.buttons.length; i++) {
-        if (pad.buttons[i].pressed) { anyButtonPressed = true; break; }
+        if (pad.buttons[i].pressed) {
+          anyButtonPressed = true;
+          break;
+        }
       }
       if (anyButtonPressed) this.startIntro();
     }
@@ -309,6 +343,7 @@ export default class Game {
     this.introSkipRequested = false;
     this.introVideoDone = false;
     this.introVideoPlaying = false;
+
     setTimeout(() => {
       if (!this.showIntroVideo || this.introSkipRequested) return;
       this.introVideoPlaying = true;
@@ -331,7 +366,9 @@ export default class Game {
 
   skipIntro() {
     this.introSkipRequested = true;
-    try { this.introVideo.pause(); } catch (e) {}
+    try {
+      this.introVideo.pause();
+    } catch (e) {}
     this.showIntroVideo = false;
     this.introVideoPlaying = false;
     this.beginGameAfterIntro();
@@ -351,6 +388,7 @@ export default class Game {
 
     const yellowContainer = this.containers.find(c => c.type === "amarillo");
     this.truckTargetX = yellowContainer ? yellowContainer.x - 60 : this.cameraX + this.width / 2;
+
     this.truckX = this.cameraX + this.width + 300;
     this.truckY = this.groundY;
     this.truckAnimIndex = 0;
@@ -423,15 +461,6 @@ export default class Game {
     }
   }
 
-  isActionPressed() {
-    return !!this.keys["Control"] || (!!this.gamepadButtons["X"] && !this.prevGamepadButtons["X"]);
-  }
-
-  consumeAction() {
-    this.keys["Control"] = false;
-    this.gamepadButtons["X"] = false;
-  }
-
   update() {
     const now = performance.now();
 
@@ -440,7 +469,9 @@ export default class Game {
         this.introFadeAlpha = Math.min(1, this.introFadeAlpha + 0.01);
         if (this.introFadeAlpha >= 1) this.introFadeMode = "steady";
       } else if (this.introFadeMode === "steady") {
-        if (this.introVideoPlaying && this.introVideo.duration && this.introVideo.currentTime >= this.introVideo.duration - 0.8) this.introFadeMode = "out";
+        if (this.introVideoPlaying && this.introVideo.duration && this.introVideo.currentTime >= this.introVideo.duration - 0.8) {
+          this.introFadeMode = "out";
+        }
       } else if (this.introFadeMode === "out") {
         this.introFadeAlpha = Math.max(0, this.introFadeAlpha - 0.01);
         if (this.introFadeAlpha <= 0) {
@@ -456,6 +487,9 @@ export default class Game {
 
     if (this.gamepad) {
       this.keys["ArrowUp"] = !!this.gamepadButtons["A"];
+      if (!this.prevGamepadButtons["X"] && this.gamepadButtons["X"]) {
+        this.keys["Control"] = true;
+      }
       const left = this.gamepadButtons["DLEFT"] || this.gamepadButtons["LLEFT"];
       const right = this.gamepadButtons["DRIGHT"] || this.gamepadButtons["LRIGHT"];
       this.keys["ArrowLeft"] = left;
@@ -469,32 +503,6 @@ export default class Game {
       return;
     }
 
-    const inTalkZone = this.scene === "inside" && this.isColliding(this.player, this.talkZone);
-    const actionPressed = this.isActionPressed();
-    const actionRisingEdge = actionPressed && !this.lastActionPressed;
-
-    if (this.scene === "inside" && inTalkZone && actionRisingEdge) {
-      this.talkFrozen = !this.talkFrozen;
-      this.consumeAction();
-      if (this.talkFrozen) {
-        this.keys["ArrowLeft"] = false;
-        this.keys["ArrowRight"] = false;
-        this.keys["ArrowUp"] = false;
-      }
-    }
-
-    if (this.talkFrozen) {
-      this.player.update({}, this.worldWidth, this.groundY, this.platforms);
-      this.clampPlayerInside();
-      this.keys["ArrowLeft"] = false;
-      this.keys["ArrowRight"] = false;
-      this.keys["ArrowUp"] = false;
-      this.keys["Control"] = false;
-      this.updateCamera();
-      this.lastActionPressed = actionPressed;
-      return;
-    }
-
     if (!this.transitionLock && this.keys["Control"]) {
       if (this.scene === "outside" && this.isColliding(this.player, this.doorZone)) {
         this.scene = "inside";
@@ -504,7 +512,6 @@ export default class Game {
         this.transitionLock = true;
         setTimeout(() => (this.transitionLock = false), 300);
         this.keys["Control"] = false;
-        this.lastActionPressed = actionPressed;
         return;
       }
 
@@ -516,7 +523,6 @@ export default class Game {
         this.transitionLock = true;
         setTimeout(() => (this.transitionLock = false), 300);
         this.keys["Control"] = false;
-        this.lastActionPressed = actionPressed;
         return;
       }
     }
@@ -535,13 +541,11 @@ export default class Game {
 
     if (this.truckSequenceStarted) {
       this.player.update(this.keys, this.worldWidth, this.groundY, this.platforms);
-      this.clampPlayerInside();
       if (!this.keys["ArrowLeft"] && !this.keys["ArrowRight"]) {
         this.player.setAnimation("see");
       }
       this.updateCamera();
       this.updateTruckSequence();
-      this.lastActionPressed = actionPressed;
       return;
     }
 
@@ -551,7 +555,6 @@ export default class Game {
       this.player.update(this.keys, this.worldWidth, this.groundY, this.platforms);
     }
 
-    this.clampPlayerInside();
     this.updateCamera();
 
     if (this.scene === "outside" && !this.collectedItem) {
@@ -605,8 +608,6 @@ export default class Game {
         }
       }
     }
-
-    this.lastActionPressed = actionPressed;
   }
 
   restartGame() {
@@ -619,8 +620,6 @@ export default class Game {
     this.truckLeaveTime = null;
     this.truckVideoPlaying = false;
     this.truckVideoFinished = false;
-    this.talkFrozen = false;
-    this.lastActionPressed = false;
 
     try {
       this.truckVideo.pause();
@@ -630,9 +629,9 @@ export default class Game {
     this.gameOver = false;
     this.finishTime = null;
 
-    this.player = new Player(this.insideSpawn.x, this.insideSpawn.y);
+    this.player = new Player(this.outsideSpawn.x, this.outsideSpawn.y);
     this.cameraX = 0;
-    this.scene = "inside";
+    this.scene = "outside";
 
     const shuffledDefs = this.shuffleArray(this.trashDefinitions);
     this.trashItems = [];
@@ -657,7 +656,6 @@ export default class Game {
       this.cameraX = 0;
       return;
     }
-
     const targetX = this.player.x + this.player.width / 2 - this.width / 2;
     this.cameraX = Math.max(0, Math.min(targetX, this.worldWidth - this.width));
   }
@@ -698,13 +696,6 @@ export default class Game {
         this.ctx.textAlign = "center";
         this.ctx.fillText("Pulsa una tecla o botón para empezar", this.width / 2, this.height / 2);
       }
-      return;
-    }
-
-    if (this.truckVideoPlaying && this.truckVideo.readyState >= 2) {
-      this.ctx.fillStyle = "#000";
-      this.ctx.fillRect(0, 0, this.width, this.height);
-      this.ctx.drawImage(this.truckVideo, 0, 0, this.width, this.height);
       return;
     }
 
@@ -768,16 +759,7 @@ export default class Game {
     this.ctx.fillText(`${this.remainingTrash}`, counterBoxX + counterBoxW / 2, counterBoxY + counterBoxH / 2);
     this.ctx.restore();
 
-    if (this.scene === "inside" && this.talkFrozen) {
-      if (this.dialogo1Image.complete && this.dialogo1Image.naturalWidth > 0) {
-        this.ctx.drawImage(this.dialogo1Image, this.width - 320, 40, 320, 280);
-      }
-      if (this.dialogo2Image.complete && this.dialogo2Image.naturalWidth > 0) {
-        this.ctx.drawImage(this.dialogo2Image, 25, 65, 320, 280);
-      }
-    }
-
-    if (this.gameOver && !this.truckSequenceStarted) {
+    if (this.gameOver) {
       if (this.finishImage.complete && this.finishImage.naturalWidth > 0) {
         const img = this.finishImage;
         const scale = 0.8;
@@ -880,20 +862,32 @@ export default class Game {
       }
     }
 
-    if (this.truckSequenceStarted && !this.truckVideoPlaying) {
+    if (this.truckSequenceStarted) {
       const screenX = this.truckX - this.cameraX;
       const screenY = this.truckY;
       const scale = 0.8;
-      const img = this.truckLeaving ? this.truckFrames[this.truckFrames.length - 1] : this.truckBaseImage;
-      if (img.complete && img.naturalWidth > 0) {
-        const w = img.naturalWidth * scale;
-        const h = img.naturalHeight * scale;
-        this.ctx.drawImage(img, screenX, screenY - h + 25, w, h);
+      if (this.truckVideoPlaying && this.truckVideo.readyState >= 2) {
+        const videoW = this.truckVideo.videoWidth * scale;
+        const videoH = this.truckVideo.videoHeight * scale;
+        this.ctx.drawImage(this.truckVideo, screenX, screenY - videoH + 25, videoW, videoH);
+      } else {
+        const img = this.truckLeaving ? this.truckFrames[this.truckFrames.length - 1] : this.truckBaseImage;
+        if (img.complete && img.naturalWidth > 0) {
+          const w = img.naturalWidth * scale;
+          const h = img.naturalHeight * scale;
+          this.ctx.drawImage(img, screenX, screenY - h + 25, w, h);
+        }
       }
     }
 
     if (this.scene === "outside") {
-      this.player.draw(this.ctx, this.cameraX, this.collectedItem, this.groundY, this.platforms);
+      this.player.draw(
+        this.ctx,
+        this.cameraX,
+        this.scene === "outside" ? this.collectedItem : null,
+        this.groundY,
+        this.platforms
+      );
 
       const nearDoor = this.isColliding(this.player, this.doorZone);
       if (this.enterImage.complete && this.enterImage.naturalWidth > 0 && nearDoor) {
@@ -928,29 +922,29 @@ export default class Game {
         this.ctx.drawImage(this.exitImage, x, y, w, h);
       }
 
-      const familyFrozen = this.talkFrozen;
-      const motherImg = familyFrozen ? this.motherImage2 : this.motherImage;
-      const fatherImg = familyFrozen ? this.fatherImage2 : this.fatherImage;
-
-      if (motherImg.complete && motherImg.naturalWidth > 0) this.ctx.drawImage(motherImg, 320, this.groundY - 185, 100, 180);
-      if (fatherImg.complete && fatherImg.naturalWidth > 0) this.ctx.drawImage(fatherImg, 420, this.groundY - 200, 90, 200);
-
-      if (this.talkImage.complete && this.talkImage.naturalWidth > 0) {
-        const nearTalk = this.isColliding(this.player, this.talkZone);
-        if (nearTalk && !this.talkFrozen) {
-          const w = 40;
-          const h = 20;
-          const x = this.player.x - this.cameraX + this.player.width / 2 - w / 2;
-          const y = this.player.y - 20;
-          this.ctx.drawImage(this.talkImage, x, y, w, h);
-        }
+      if (this.motherImage.complete && this.motherImage.naturalWidth > 0) {
+        this.ctx.drawImage(this.motherImage, 320, this.groundY - 185, 100, 180);
+      }
+      if (this.fatherImage.complete && this.fatherImage.naturalWidth > 0) {
+        this.ctx.drawImage(this.fatherImage, 420, this.groundY - 200, 90, 200);
       }
 
-      this.player.draw(this.ctx, this.cameraX, null, this.groundY, this.platforms);
+      this.player.draw(
+        this.ctx,
+        this.cameraX,
+        this.scene === "outside" ? this.collectedItem : null,
+        this.groundY,
+        this.platforms
+      );
     }
   }
 
   isColliding(a, b) {
-    return a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y;
+    return (
+      a.x < b.x + b.width &&
+      a.x + a.width > b.x &&
+      a.y < b.y + b.height &&
+      a.y + a.height > b.y
+    );
   }
 }
