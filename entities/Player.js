@@ -6,7 +6,7 @@ export default class Player {
     this.width = 72;
     this.height = 108;
     const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
-    this.speed = isMobile ? 3.6 : 3.6;
+    this.speed = isMobile ? 3.6 : 1.8;
 
     this.vx = 0;
     this.vy = 0;
@@ -23,6 +23,10 @@ export default class Player {
 
     // Temporizador para atravesar plataformas hacia abajo
     this.passThroughTimer = 0;
+
+    // Carga del icono de la bolsa de basura
+    this.bolsaImage = new Image();
+    this.bolsaImage.src = "assets/basura/bolsa.png";
 
     this.idleFrames = [];
     this.walkFrames = [];
@@ -65,7 +69,7 @@ export default class Player {
       this.facing = 1;
     }
 
-    // Lógica para Bajar de la plataforma al pulsar Abajo
+    // Bajar de plataformas
     if (this.passThroughTimer > 0) {
       this.passThroughTimer--;
     }
@@ -75,7 +79,7 @@ export default class Player {
       this.vy = 1;
       this.onGround = false;
       this.onPlatform = false;
-      this.passThroughTimer = 15; // Ignora plataformas durante 15 fotogramas para caer
+      this.passThroughTimer = 15;
     }
 
     // Salto
@@ -98,7 +102,7 @@ export default class Player {
     this.onGround = false;
     this.onPlatform = false;
 
-    // Colisión con plataformas (solo si no está atravesando)
+    // Colisión con plataformas
     if (this.passThroughTimer === 0) {
       for (const p of platforms) {
         const pieIzquierdo = this.x + 14;
@@ -120,7 +124,7 @@ export default class Player {
       }
     }
 
-    // Colisión con el suelo principal
+    // Colisión suelo
     if (!this.onPlatform && this.y + this.height >= groundY) {
       this.y = groundY - this.height;
       this.vy = 0;
@@ -268,12 +272,48 @@ export default class Player {
     const spriteH = img.naturalHeight;
     const sx = carriedItem.spriteIndex * spriteW;
 
-    const drawW = 32;
-    const drawH = 32;
+    // EFECTO POP AL RECOGER
+    if (!carriedItem.pickupTime) {
+      carriedItem.pickupTime = performance.now();
+    }
+
+    const elapsed = performance.now() - carriedItem.pickupTime;
+    const popDuration = 220;
+    let popScale = 1;
+
+    if (elapsed < popDuration) {
+      const progress = elapsed / popDuration;
+      popScale = 1 + 0.45 * Math.sin((1 - progress) * (Math.PI / 2));
+    }
+
+    const baseSize = 32;
+    const drawW = baseSize * popScale;
+    const drawH = baseSize * popScale;
 
     const objX = screenX + this.width / 2 - drawW / 2;
-    const objY = screenYWithOffset - drawH - 8;
+    const objY = screenYWithOffset - drawH - 8 - (drawH - baseSize) / 2;
+
+    ctx.save();
+
+    // Aplica la traslucidez ligera (80% opaco / 20% transparente)
+    ctx.globalAlpha = 0.8;
+
+    // 1. DIBUJAR LA BOLSA DE TRASFONDO
+    if (this.bolsaImage.complete && this.bolsaImage.naturalWidth > 0) {
+      const bolsaW = drawW * 1.25;
+      const bolsaH = drawH * 1.25;
+      const bolsaX = screenX + this.width / 2 - bolsaW / 2;
+      const bolsaY = objY + (drawH - bolsaH) / 2;
+
+      ctx.drawImage(this.bolsaImage, bolsaX, bolsaY, bolsaW, bolsaH);
+    }
+
+    // 2. DIBUJAR EL RESIDUO ENCIMA CON GLOW BLANCO
+    ctx.shadowColor = "rgba(255, 255, 255, 0.95)";
+    ctx.shadowBlur = 10;
 
     ctx.drawImage(img, sx, 0, spriteW, spriteH, objX, objY, drawW, drawH);
+
+    ctx.restore();
   }
 }
