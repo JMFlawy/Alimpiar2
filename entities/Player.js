@@ -6,7 +6,7 @@ export default class Player {
     this.width = 72;
     this.height = 108;
     const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
-    this.speed = isMobile ? 3.6 : 3.6;
+    this.speed = isMobile ? 3.6 : 1.8;
 
     this.vx = 0;
     this.vy = 0;
@@ -15,6 +15,7 @@ export default class Player {
     this.jumpStrength = -4;
 
     this.onGround = false;
+    this.wasGrounded = false;
     this.onPlatform = false;
     this.facing = 1;
     this.wasOnPlatform = false;
@@ -69,7 +70,6 @@ export default class Player {
     }
 
     this.vy += this.gravity;
-
     this.x += this.vx;
     this.y += this.vy;
 
@@ -77,6 +77,7 @@ export default class Player {
     if (this.x + this.width > worldWidth) this.x = worldWidth - this.width;
 
     this.wasOnPlatform = this.onPlatform || this.jumpedFromPlatform;
+    this.wasGrounded = this.onGround;
     this.onGround = false;
     this.onPlatform = false;
 
@@ -147,15 +148,11 @@ export default class Player {
 
   getCurrentFrames() {
     switch (this.currentAnim) {
-      case "walk":
-        return this.walkFrames;
-      case "jump":
-        return this.jumpFrames;
-      case "see":
-        return this.seeFrames;
+      case "walk": return this.walkFrames;
+      case "jump": return this.jumpFrames;
+      case "see": return this.seeFrames;
       case "idle":
-      default:
-        return this.idleFrames;
+      default: return this.idleFrames;
     }
   }
 
@@ -198,15 +195,7 @@ export default class Player {
       ctx.save();
       ctx.fillStyle = `rgba(0, 0, 0, ${shadowAlpha})`;
       ctx.beginPath();
-      ctx.ellipse(
-        shadowX,
-        shadowY,
-        shadowW / 2,
-        shadowH / 2,
-        0,
-        0,
-        Math.PI * 2
-      );
+      ctx.ellipse(shadowX, shadowY, shadowW / 2, shadowH / 2, 0, 0, Math.PI * 2);
       ctx.fill();
       ctx.restore();
     }
@@ -214,7 +203,6 @@ export default class Player {
     if (!img || !img.complete || img.naturalWidth === 0) {
       ctx.fillStyle = "#ffcc66";
       ctx.fillRect(screenX, screenY + visualOffsetY, this.width, this.height);
-
       if (carriedItem && carriedItem.image && carriedItem.image.complete) {
         this.drawCarriedItem(ctx, screenX, screenY + visualOffsetY, carriedItem);
       }
@@ -227,7 +215,6 @@ export default class Player {
     const drawHeight = img.naturalHeight * scaleY;
 
     ctx.save();
-
     if (this.facing === -1) {
       ctx.translate(screenX + drawWidth / 2, 0);
       ctx.scale(-1, 1);
@@ -256,13 +243,9 @@ export default class Player {
     const cfg = carriedItem.cfg || { cols: 1 };
     const cols = cfg.cols;
 
-    const fullW = img.naturalWidth;
-    const fullH = img.naturalHeight;
-
-    const spriteW = fullW / cols;
-    const spriteH = fullH;
+    const spriteW = img.naturalWidth / cols;
+    const spriteH = img.naturalHeight;
     const sx = carriedItem.spriteIndex * spriteW;
-    const sy = 0;
 
     const drawW = 32;
     const drawH = 32;
@@ -270,16 +253,6 @@ export default class Player {
     const objX = screenX + this.width / 2 - drawW / 2;
     const objY = screenYWithOffset - drawH - 8;
 
-    ctx.drawImage(
-      img,
-      sx,
-      sy,
-      spriteW,
-      spriteH,
-      objX,
-      objY,
-      drawW,
-      drawH
-    );
+    ctx.drawImage(img, sx, 0, spriteW, spriteH, objX, objY, drawW, drawH);
   }
 }
