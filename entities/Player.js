@@ -21,6 +21,9 @@ export default class Player {
     this.wasOnPlatform = false;
     this.jumpedFromPlatform = false;
 
+    // Temporizador para atravesar plataformas hacia abajo
+    this.passThroughTimer = 0;
+
     this.idleFrames = [];
     this.walkFrames = [];
     this.jumpFrames = [];
@@ -62,6 +65,20 @@ export default class Player {
       this.facing = 1;
     }
 
+    // Lógica para Bajar de la plataforma al pulsar Abajo
+    if (this.passThroughTimer > 0) {
+      this.passThroughTimer--;
+    }
+
+    if ((keys["ArrowDown"] || keys["s"] || keys["S"]) && this.onPlatform && this.passThroughTimer === 0) {
+      this.y += 4;
+      this.vy = 1;
+      this.onGround = false;
+      this.onPlatform = false;
+      this.passThroughTimer = 15; // Ignora plataformas durante 15 fotogramas para caer
+    }
+
+    // Salto
     if ((keys["ArrowUp"] || keys[" "]) && this.onGround) {
       this.jumpedFromPlatform = this.onPlatform;
       this.vy = this.jumpStrength;
@@ -81,25 +98,29 @@ export default class Player {
     this.onGround = false;
     this.onPlatform = false;
 
-    for (const p of platforms) {
-      const pieIzquierdo = this.x + 14;
-      const pieDerecho = this.x + this.width - 14;
+    // Colisión con plataformas (solo si no está atravesando)
+    if (this.passThroughTimer === 0) {
+      for (const p of platforms) {
+        const pieIzquierdo = this.x + 14;
+        const pieDerecho = this.x + this.width - 14;
 
-      if (
-        pieIzquierdo < p.x + p.width &&
-        pieDerecho > p.x &&
-        this.y + this.height > p.y &&
-        this.y + this.height < p.y + p.height &&
-        this.vy >= 0
-      ) {
-        this.y = p.y - this.height;
-        this.vy = 0;
-        this.onGround = true;
-        this.onPlatform = true;
-        this.jumpedFromPlatform = false;
+        if (
+          pieIzquierdo < p.x + p.width &&
+          pieDerecho > p.x &&
+          this.y + this.height > p.y &&
+          this.y + this.height < p.y + p.height &&
+          this.vy >= 0
+        ) {
+          this.y = p.y - this.height;
+          this.vy = 0;
+          this.onGround = true;
+          this.onPlatform = true;
+          this.jumpedFromPlatform = false;
+        }
       }
     }
 
+    // Colisión con el suelo principal
     if (!this.onPlatform && this.y + this.height >= groundY) {
       this.y = groundY - this.height;
       this.vy = 0;
