@@ -5,7 +5,6 @@ import EffectsManager from "./EffectsManager.js";
 import TruckSequence from "./TruckSequence.js";
 
 // --- INTERCEPTOR GLOBAL DE AUDIO ---
-// Bloquea cualquier reproducir() de audio externo mientras la intro esté activa
 if (!window._audioPlayPatched) {
   window._audioPlayPatched = true;
   const originalPlay = HTMLAudioElement.prototype.play;
@@ -215,11 +214,9 @@ export default class Game {
   }
 
   startIntro() {
-    // 1. Bloqueo global de reproducción
     window._blockGameAudio = true;
     this.stopAllSounds();
 
-    // 2. Pausar cualquier elemento audio/video existente
     document.querySelectorAll("audio, video").forEach(el => {
       if (el !== this.introVideo) {
         el.pause();
@@ -245,7 +242,6 @@ export default class Game {
       } catch (e) {}
     }
 
-    // Levantar el bloqueo global de audio
     window._blockGameAudio = false;
 
     this.showIntroVideo = false;
@@ -279,8 +275,11 @@ export default class Game {
     this.effects.update();
     this.truckManager.update();
 
+    // FILTRAR PLATAFORMAS: Solo existen fuera de la casa
+    const activePlatforms = this.scene === "outside" ? this.platforms : [];
+
     if (this.effects.sceneTransition.active) {
-      this.player.update({}, this.worldWidth, this.groundY, this.platforms);
+      this.player.update({}, this.worldWidth, this.groundY, activePlatforms);
       this.clampPlayerInside();
       this.updateCamera();
       return;
@@ -295,7 +294,7 @@ export default class Game {
     }
 
     if (this.talkFrozen) {
-      this.player.update({}, this.worldWidth, this.groundY, this.platforms);
+      this.player.update({}, this.worldWidth, this.groundY, activePlatforms);
       this.clampPlayerInside();
       this.updateCamera();
       this.lastActionPressed = actionPressed;
@@ -321,14 +320,14 @@ export default class Game {
 
     // Actualización del personaje
     if (this.truckSequenceStarted) {
-      this.player.update(this.keys, this.worldWidth, this.groundY, this.platforms);
+      this.player.update(this.keys, this.worldWidth, this.groundY, activePlatforms);
       if (!this.keys["ArrowLeft"] && !this.keys["ArrowRight"]) {
         this.player.setAnimation("see");
       }
     } else if (this.gameOver) {
-      this.player.update({}, this.worldWidth, this.groundY, this.platforms);
+      this.player.update({}, this.worldWidth, this.groundY, activePlatforms);
     } else {
-      this.player.update(this.keys, this.worldWidth, this.groundY, this.platforms);
+      this.player.update(this.keys, this.worldWidth, this.groundY, activePlatforms);
     }
 
     this.clampPlayerInside();
@@ -361,7 +360,6 @@ export default class Game {
             (binType === "gris" && trashType === "resto");
 
           if (correct) {
-            // SOLO SI ES CORRECTO: Lanzar residuo
             this.collectedItem = null;
 
             const startX = this.player.x + this.player.width / 2;
@@ -387,7 +385,6 @@ export default class Game {
               }
             });
           } else {
-            // SI ES INCORRECTO: Mantiene el ítem sobre la cabeza
             this.playRandomSound(this.failSounds);
             this.containerGlowColor = "rgba(255, 110, 110, 0.95)";
             this.containerGlowTime = performance.now();
@@ -588,7 +585,8 @@ export default class Game {
         this.ctx.drawImage(this.talkImage, this.player.x - this.cameraX + 16, this.player.y - 20, 40, 20);
       }
 
-      this.player.draw(this.ctx, this.cameraX, null, this.groundY, this.platforms);
+      // Pasar plataformas vacías en el interior
+      this.player.draw(this.ctx, this.cameraX, null, this.groundY, []);
     }
   }
 
