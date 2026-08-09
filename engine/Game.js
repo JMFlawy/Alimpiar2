@@ -53,6 +53,9 @@ export default class Game {
     this.fadeToBlack = false;
     this.fadeAlpha = 0;
 
+    // Estado de Pausa
+    this.isPaused = false;
+
     this.showStartScreen = true;
     this.showIntroVideo = false;
     this.introVideoPlaying = false;
@@ -166,11 +169,46 @@ export default class Game {
     window.addEventListener("keydown", (e) => {
       if (e.key === "Escape" && this.showIntroVideo) { this.skipIntro(); return; }
       if (this.showStartScreen) { this.startIntro(); return; }
-      if (this.sequenceFinished && this.fadeAlpha >= 1) { this.restartGame(); return; }
+      
+      // Volver al menú principal tras terminar la secuencia final
+      if (this.sequenceFinished && this.fadeAlpha >= 1) { 
+        this.stopAllSounds();
+        window.location.href = "../index.html";
+        return; 
+      }
+
+      // Menú de pausa
+      if (e.key === "Escape") {
+        this.isPaused = !this.isPaused;
+        if (this.isPaused) {
+          this.stopAllSounds();
+        } else if (this.scene === "outside") {
+          this.circulandoSound.play().catch(() => {});
+        }
+        return;
+      }
+
       this.keys[e.key] = true;
     });
 
-    this.canvas.addEventListener("mousedown", () => { if (this.showStartScreen) this.startIntro(); });
+    this.canvas.addEventListener("mousedown", (e) => { 
+      if (this.showStartScreen) { this.startIntro(); return; }
+      if (this.isPaused) { this.handlePauseMenuClick(e); return; }
+      if (this.sequenceFinished && this.fadeAlpha >= 1) {
+        this.stopAllSounds();
+        window.location.href = "../index.html";
+      }
+    });
+
+    this.canvas.addEventListener("touchstart", (e) => {
+      if (this.showStartScreen) { this.startIntro(); return; }
+      if (this.isPaused) { this.handlePauseMenuClick(e); return; }
+      if (this.sequenceFinished && this.fadeAlpha >= 1) {
+        this.stopAllSounds();
+        window.location.href = "../index.html";
+      }
+    }, { passive: false });
+
     window.addEventListener("keyup", (e) => { this.keys[e.key] = false; });
 
     const bindTouchButton = (id, key) => {
@@ -191,6 +229,47 @@ export default class Game {
 
     window.addEventListener("gamepadconnected", (e) => { this.gamepad = e.gamepad; });
     window.addEventListener("gamepaddisconnected", (e) => { if (this.gamepad && e.gamepad.index === this.gamepad.index) this.gamepad = null; });
+  }
+
+  handlePauseMenuClick(e) {
+    const rect = this.canvas.getBoundingClientRect();
+    const clientX = e.clientX || (e.touches && e.touches[0] ? e.touches[0].clientX : 0);
+    const clientY = e.clientY || (e.touches && e.touches[0] ? e.touches[0].clientY : 0);
+
+    const scaleX = this.width / rect.width;
+    const scaleY = this.height / rect.height;
+
+    const clickX = (clientX - rect.left) * scaleX;
+    const clickY = (clientY - rect.top) * scaleY;
+
+    const panelW = 380;
+    const panelH = 220;
+    const panelY = (this.height - panelH) / 2;
+
+    const btnW = 280;
+    const btnH = 45;
+    const btnX = (this.width - btnW) / 2;
+
+    const resumeY = panelY + 80;
+    const menuY = panelY + 140;
+
+    // Reanudar
+    if (
+      clickX >= btnX && clickX <= btnX + btnW &&
+      clickY >= resumeY && clickY <= resumeY + btnH
+    ) {
+      this.isPaused = false;
+      if (this.scene === "outside") this.circulandoSound.play().catch(() => {});
+    }
+
+    // Menú Principal
+    if (
+      clickX >= btnX && clickX <= btnX + btnW &&
+      clickY >= menuY && clickY <= menuY + btnH
+    ) {
+      this.stopAllSounds();
+      window.location.href = "../index.html";
+    }
   }
 
   start() { requestAnimationFrame(this.loop.bind(this)); }
@@ -259,7 +338,7 @@ export default class Game {
   isActionPressed() { return !!this.keys["Control"] || (!!this.gamepadButtons["X"] && !this.prevGamepadButtons["X"]); }
 
   update() {
-    if (this.showIntroVideo || this.showStartScreen) return;
+    if (this.showIntroVideo || this.showStartScreen || this.isPaused) return;
 
     if (this.gamepad) {
       this.keys["ArrowUp"] = !!this.gamepadButtons["A"];
@@ -408,6 +487,7 @@ export default class Game {
     this.truckSequenceStarted = false;
     this.talkFrozen = false;
     this.gameOver = false;
+    this.isPaused = false;
 
     this.player = new Player(this.insideSpawn.x, this.insideSpawn.y);
     this.cameraX = 0;
@@ -472,6 +552,56 @@ export default class Game {
       this.ctx.fillStyle = `rgba(0, 0, 0, ${this.fadeAlpha})`;
       this.ctx.fillRect(0, 0, this.width, this.height);
     }
+
+    if (this.isPaused) {
+      this.drawPauseMenu();
+    }
+  }
+
+  drawPauseMenu() {
+    this.ctx.save();
+
+    this.ctx.fillStyle = "rgba(0, 0, 0, 0.75)";
+    this.ctx.fillRect(0, 0, this.width, this.height);
+
+    const panelW = 380;
+    const panelH = 220;
+    const panelX = (this.width - panelW) / 2;
+    const panelY = (this.height - panelH) / 2;
+
+    this.ctx.fillStyle = "#2d3436";
+    this.ctx.fillRect(panelX, panelY, panelW, panelH);
+    this.ctx.strokeStyle = "#ffd700";
+    this.ctx.lineWidth = 3;
+    this.ctx.strokeRect(panelX, panelY, panelW, panelH);
+
+    this.ctx.fillStyle = "#ffd700";
+    this.ctx.textAlign = "center";
+    this.ctx.font = "bold 26px Arial";
+    this.ctx.fillText("JUEGO EN PAUSA", this.width / 2, panelY + 45);
+
+    const btnW = 280;
+    const btnH = 45;
+    const btnX = (this.width - btnW) / 2;
+
+    const resumeY = panelY + 80;
+    const menuY = panelY + 140;
+
+    // Botón Reanudar
+    this.ctx.fillStyle = "#00b894";
+    this.ctx.fillRect(btnX, resumeY, btnW, btnH);
+    this.ctx.fillStyle = "#ffffff";
+    this.ctx.font = "bold 18px Arial";
+    this.ctx.fillText("▶ REANUDAR (ESC)", this.width / 2, resumeY + 28);
+
+    // Botón Menú Principal
+    this.ctx.fillStyle = "#d63031";
+    this.ctx.fillRect(btnX, menuY, btnW, btnH);
+    this.ctx.fillStyle = "#ffffff";
+    this.ctx.font = "bold 18px Arial";
+    this.ctx.fillText("🏠 MENÚ PRINCIPAL", this.width / 2, menuY + 28);
+
+    this.ctx.restore();
   }
 
   drawHUD() {
