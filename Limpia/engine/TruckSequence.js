@@ -40,13 +40,14 @@ export default class TruckSequence {
     this.game.circulandoSound.play().catch(() => {});
   }
 
-  update() {
+  update(dtFactor = 1) {
     if (!this.game.truckSequenceStarted) return;
 
-    const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
-    const speed = isMobile ? 1.8 : 1.8;
+    // Velocidad reducida a 1.2 adaptada mediante Delta Time
+    const baseSpeed = 1.2;
+    const speed = baseSpeed * dtFactor;
 
-    if (!this.game.truckVideoPlaying && Math.random() < 0.4) {
+    if (!this.game.truckVideoPlaying && Math.random() < 0.3 * dtFactor) {
       const img = this.truckBaseImage;
       const truckW = (img && img.complete && img.naturalWidth > 0) ? img.naturalWidth * 0.8 : 360;
       this.game.effects.spawnTruckSmoke(this.game.truckX + truckW - 35, this.game.groundY - 15);
