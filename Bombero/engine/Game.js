@@ -35,7 +35,7 @@ export default class Game {
     this.keys = {};
 
     // --- VELOCIDADES ESTABLES ---
-    this.baseScrollSpeed = 1.8;
+    this.baseScrollSpeed = 1.3;
     this.scrollSpeed = this.baseScrollSpeed;
     this.roadOffsetX = 0;
 
