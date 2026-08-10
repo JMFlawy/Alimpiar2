@@ -532,7 +532,7 @@ export default class Game {
     this.isTurbo = !!this.keys["Control"];
     const turboMultiplier = this.isTurbo ? 3.0 : 1.0; 
     
-    const sprayFactor = this.isSpraying ? 0.85 : 1.0; 
+    const sprayFactor = this.isSpraying ? 0.60 : 1.0; 
     this.scrollSpeed = this.baseScrollSpeed * turboMultiplier * sprayFactor;
 
     if (this.sndMusica.paused) this.playSound(this.sndMusica);
