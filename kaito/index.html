@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Las aventuras de Kaito - Menú Principal</title>
+  
+  <style>
+    /* Reset básico */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    body {
+      width: 100vw;
+      height: 100vh;
+      background-color: #0f1418;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    /* Contenedor que mantiene la proporción exacta de menu.png */
+    .menu-wrapper {
+      position: relative;
+      width: 100vw;
+      max-height: 100vh;
+      aspect-ratio: 2.15 / 1; /* Proporción de la imagen menu.png */
+      background-image: url('Bombero/assets/menu.png');
+      background-size: contain;
+      background-repeat: no-repeat;
+      background-position: center;
+    }
+
+    /* Ajuste para pantallas donde el alto manda */
+    @media (min-aspect-ratio: 2.15/1) {
+      .menu-wrapper {
+        width: auto;
+        height: 100vh;
+      }
+    }
+
+    /* Estilos base para los huecos seleccionables */
+    .game-slot {
+      position: absolute;
+      top: 31.7%;
+      width: 26.2%;
+      height: 48.6%;
+      border-radius: 10px;
+      overflow: hidden;
+      cursor: pointer;
+      text-decoration: none;
+      border: 3px solid transparent;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+      transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    /* Posición exacta del hueco izquierdo */
+    .slot-left {
+      left: 22.4%;
+    }
+
+    /* Posición exacta del hueco derecho */
+    .slot-right {
+      left: 51.4%;
+    }
+
+    /* Efectos táctiles y de ratón (iluminación dorada) */
+    .game-slot:hover, .game-slot:active {
+      transform: scale(1.04);
+      border-color: #ffd700;
+      box-shadow: 0 0 25px rgba(255, 215, 0, 0.9);
+      z-index: 10;
+    }
+
+    /* Imágenes de las portadas dentro de los huecos */
+    .game-slot img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      transition: transform 0.3s ease;
+    }
+
+    .game-slot:hover img {
+      transform: scale(1.06);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="menu-wrapper">
+    
+    <!-- JUEGO 1: 1.-¡A LIMPIAR! (Hueco Izquierdo) -->
+    <a href="Limpia/index.html" class="game-slot slot-left" title="1.-¡A LIMPIAR!">
+      <img src="Limpia/assets/backgrounds/inicio.png" alt="1.-¡A LIMPIAR!">
+    </a>
+
+    <!-- JUEGO 2: 2.-¡BOMBERO! (Hueco Derecho) -->
+    <a href="Bombero/index.html" class="game-slot slot-right" title="2.-¡BOMBERO!">
+      <img src="Bombero/assets/portada.png" alt="2.-¡BOMBERO!">
+    </a>
+
+  </div>
+
+</body>
+</html>
