@@ -22,7 +22,6 @@ export default class Game {
     this.score = 0;
     this.totalBuildings = 9;
     this.remainingBuildings = 9;
-    this.spawnedCount = 0;
     this.gameWon = false;
     this.isPaused = false;
     this.isTurbo = false;
@@ -48,6 +47,9 @@ export default class Game {
     this.baseScrollSpeed = 1.8;
     this.scrollSpeed = this.baseScrollSpeed;
     this.roadOffsetX = 0;
+
+    // Longitud total del circuito para el bucle continuo perfecto
+    this.totalCircuitLength = 0;
 
     // --- CONFIGURACIÓN ESTABLE DEL CAMIÓN ---
     this.truck = {
@@ -135,8 +137,6 @@ export default class Game {
     this.birds = [];
     this.clouds = [];
 
-    this.lastBuildingX = this.width * 0.65;
-    
     this.initClouds();
     this.initBirds();
     this.initCity();
@@ -213,95 +213,77 @@ export default class Game {
     };
   }
 
-  // --- GENERACIÓN DE LOS 9 EDIFICIOS DE LA FASE ---
+  // --- INICIALIZACIÓN DEL CIRCUITO FIJO DE LOS 9 EDIFICIOS ---
   initCity() {
     this.buildings = [];
     this.fires = [];
-    this.spawnedCount = 0;
-    this.lastBuildingX = this.width * 0.65;
+
+    const fixedGap = 220; // Distancia fija y uniforme entre cada edificio
+    let currentX = this.width * 0.75; // El primer edificio aparece por la derecha
 
     for (let i = 0; i < this.totalBuildings; i++) {
-      this.spawnNextBuilding();
-    }
-  }
+      const imgIdx = i % this.buildingImages.length;
+      const col = i % 4;
 
-  spawnNextBuilding() {
-    if (this.spawnedCount >= this.totalBuildings) return;
+      const baseW = 160 + (i % 3) * 20;
+      const baseH = 260 + (i % 4) * 25;
 
-    const templateIdx = this.spawnedCount;
-    const imgIdx = Math.floor(Math.random() * this.buildingImages.length);
-    const col = Math.floor(Math.random() * 4);
+      const building = {
+        id: i + 1,
+        imgIdx: imgIdx,
+        col: col,
+        x: currentX,
+        y: this.groundY - baseH,
+        width: baseW,
+        height: baseH,
+        extinguished: false,
+        cleanPulse: 0
+      };
 
-    this.spawnedCount++;
+      this.buildings.push(building);
 
-    const sizeMultiplier = 1.0 + Math.random() * 0.2; 
-    const baseW = 120 + (templateIdx % 3) * 20;
-    const baseH = 220 + (templateIdx % 4) * 35;
+      // Generar fuegos garantizados
+      const windowStepY = 55;
+      const windowStepX = 42;
+      let fireCount = 0;
 
-    const bWidth = baseW * sizeMultiplier; 
-    const bHeight = baseH * sizeMultiplier; 
-    const gap = 160 + Math.random() * 100; 
-
-    let x;
-    if (templateIdx === 0) {
-      x = this.lastBuildingX;
-    } else {
-      x = this.lastBuildingX + gap;
-    }
-
-    const building = {
-      id: Math.random(),
-      templateIdx: templateIdx,
-      imgIdx: imgIdx, 
-      col: col,       
-      x: x,
-      y: this.groundY - bHeight,
-      width: bWidth,
-      height: bHeight,
-      extinguished: false,
-      cleanPulse: 0
-    };
-
-    this.buildings.push(building);
-    this.lastBuildingX = x + bWidth;
-
-    const windowStepY = 55;
-    const windowStepX = 42;
-    let fireCount = 0;
-
-    for (let wy = building.y + 30; wy < building.y + building.height - 40; wy += windowStepY) {
-      for (let wx = building.x + 15; wx < building.x + building.width - 30; wx += windowStepX) {
-        if (Math.random() < 0.55) {
-          const randomSize = 24 + Math.random() * 26;
-
-          this.fires.push({
-            buildingId: building.id,
-            x: wx + 12,
-            y: wy + 15,
-            size: randomSize,
-            variant: Math.floor(Math.random() * 3), 
-            flickerSpeed: 0.008 + Math.random() * 0.008,
-            flickerPhase: Math.random() * Math.PI * 2,
-            floatOffset: Math.random() * 100
-          });
-          fireCount++;
+      for (let wy = building.y + 35; wy < building.y + building.height - 45; wy += windowStepY) {
+        for (let wx = building.x + 18; wx < building.x + building.width - 30; wx += windowStepX) {
+          if (Math.random() < 0.6) {
+            this.fires.push({
+              buildingId: building.id,
+              x: wx + 10,
+              y: wy + 12,
+              size: 26 + Math.random() * 20,
+              variant: Math.floor(Math.random() * 3),
+              flickerSpeed: 0.008 + Math.random() * 0.008,
+              flickerPhase: Math.random() * Math.PI * 2
+            });
+            fireCount++;
+          }
         }
       }
+
+      if (fireCount === 0) {
+        this.fires.push({
+          buildingId: building.id,
+          x: building.x + building.width / 2,
+          y: building.y + building.height / 2,
+          size: 32,
+          variant: 0,
+          flickerSpeed: 0.01,
+          flickerPhase: 0
+        });
+      }
+
+      // Siguiente posición X en la fila
+      currentX += baseW + fixedGap;
     }
 
-    // Asegurar que todo edificio tenga al menos un fuego para poder ser apagado
-    if (fireCount === 0) {
-      this.fires.push({
-        buildingId: building.id,
-        x: building.x + building.width / 2,
-        y: building.y + building.height / 2,
-        size: 28,
-        variant: 0,
-        flickerSpeed: 0.01,
-        flickerPhase: 0,
-        floatOffset: 0
-      });
-    }
+    // Calcular exactamente la longitud de 1 vuelta completa al circuito
+    const firstBuilding = this.buildings[0];
+    const lastBuilding = this.buildings[this.buildings.length - 1];
+    this.totalCircuitLength = (lastBuilding.x + lastBuilding.width + fixedGap) - firstBuilding.x;
   }
 
   playSound(audio) {
@@ -674,6 +656,7 @@ export default class Game {
       }
     });
 
+    // Mover edificios y fuegos
     this.buildings.forEach(b => {
       b.x -= this.scrollSpeed * dtFactor;
       if (b.cleanPulse > 0) b.cleanPulse -= 0.02 * dtFactor;
@@ -682,6 +665,21 @@ export default class Game {
     this.fires.forEach(f => f.x -= this.scrollSpeed * dtFactor);
     this.extinguishEffects.forEach(e => e.x -= this.scrollSpeed * dtFactor);
     this.cleanSparkles.forEach(s => s.x -= this.scrollSpeed * dtFactor);
+
+    // --- BUCLE PERFECTO DEL CIRCUITO ---
+    // Cuando un edificio sale por la izquierda, avanza una vuelta entera exacta del circuito
+    this.buildings.forEach(b => {
+      if (b.x + b.width < -100) {
+        b.x += this.totalCircuitLength;
+
+        // Desplazar sus fuegos pendientes la misma distancia exacta
+        this.fires.forEach(f => {
+          if (f.buildingId === b.id) {
+            f.x += this.totalCircuitLength;
+          }
+        });
+      }
+    });
 
     // --- ASCUAS ---
     if (this.fires.length > 0 && Math.random() < 0.35 * dtFactor) {
@@ -718,26 +716,6 @@ export default class Game {
       p.life -= dtFactor;
       p.alpha = (p.life / p.maxLife) * 0.65;
       if (p.life <= 0) this.puddles.splice(i, 1);
-    }
-
-    // --- RECICLAJE FLUIDO DE LOS 9 EDIFICIOS ---
-    if (this.buildings.length > 0 && this.buildings[0].x + this.buildings[0].width < -150) {
-      const oldBuilding = this.buildings.shift();
-
-      const gap = 160 + Math.random() * 100;
-      const newX = Math.max(this.width + 100, this.lastBuildingX) + gap;
-      const dx = newX - oldBuilding.x;
-
-      oldBuilding.x = newX;
-
-      this.fires.forEach(f => {
-        if (f.buildingId === oldBuilding.id) {
-          f.x += dx;
-        }
-      });
-
-      this.buildings.push(oldBuilding);
-      this.lastBuildingX = newX + oldBuilding.width;
     }
 
     const truckBob = Math.sin(this.gameTime * 0.0025) * 0.7;
@@ -811,7 +789,7 @@ export default class Game {
       if (l.x + l.length < 0) this.speedLines.splice(i, 1);
     }
 
-    // --- BOLAS DE AGUA Y DETECCIÓN DE APAGADO ---
+    // --- BOLAS DE AGUA Y COLISIONES ---
     for (let i = this.waterParticles.length - 1; i >= 0; i--) {
       const p = this.waterParticles[i];
       
@@ -1212,7 +1190,7 @@ export default class Game {
 
     this.ctx.restore();
 
-    // 15. DIBUJAR BOTONES MÓVILES TÁCTILES
+    // 15. BOTONES MÓVILES TÁCTILES
     if (this.isMobile && this.state === "PLAYING" && !this.isPaused) {
       this.drawMobileControls();
     }
