@@ -138,11 +138,10 @@ export default class Game {
     this.bindEvents();
   }
 
-  // --- CREACIÓN DE INTERFAZ HTML EN LOS MÁRGENES NEGROS DEL MÓVIL ---
+  // --- INTERFAZ HTML TÁCTIL EN LOS MÁRGENES ---
   createMobileUI() {
     if (!this.isMobile) return;
 
-    // Eliminar overlay previo si existiera
     const oldOverlay = document.getElementById("mobile-controls-overlay");
     if (oldOverlay) oldOverlay.remove();
 
@@ -152,7 +151,7 @@ export default class Game {
     this.mobileOverlay.style.top = "0";
     this.mobileOverlay.style.left = "0";
     this.mobileOverlay.style.width = "100vw";
-    this.mobileOverlay.style.height = "100vh";
+    this.mobileOverlay.style.height = "100dvh"; // Dynamic Viewport Height para adaptarse al navegador
     this.mobileOverlay.style.pointerEvents = "none";
     this.mobileOverlay.style.zIndex = "9999";
     this.mobileOverlay.style.display = "none";
@@ -167,56 +166,62 @@ export default class Game {
       btn.style.userSelect = "none";
       btn.style.webkitUserSelect = "none";
       btn.style.touchAction = "manipulation";
-      btn.style.border = "2px solid rgba(255, 255, 255, 0.8)";
-      btn.style.borderRadius = "12px";
+      btn.style.border = "2px solid rgba(255, 255, 255, 0.85)";
+      btn.style.borderRadius = "14px";
       btn.style.fontWeight = "bold";
       btn.style.color = "#ffffff";
-      btn.style.boxShadow = "0 4px 10px rgba(0, 0, 0, 0.5)";
+      btn.style.boxShadow = "0 4px 12px rgba(0, 0, 0, 0.6)";
       btn.style.backdropFilter = "blur(4px)";
       Object.assign(btn.style, cssStyles);
       this.mobileOverlay.appendChild(btn);
       return btn;
     };
 
-    // 1. Botón de Pausa (Arriba a la derecha en el margen)
+    // Altura calculada evitando barras de Safari/Chrome
+    const safeBottom = "calc(35px + env(safe-area-inset-bottom, 0px))";
+    const safeTop = "calc(15px + env(safe-area-inset-top, 0px))";
+
+    // 1. Botón de Pausa (Arriba a la derecha)
     this.btnPause = makeBtn("⏸", {
-      top: "12px",
-      right: "12px",
-      width: "48px",
-      height: "48px",
+      top: safeTop,
+      right: "15px",
+      width: "50px",
+      height: "50px",
       fontSize: "22px",
       backgroundColor: "rgba(214, 48, 49, 0.85)"
     });
 
-    // 2. Controles de Movimiento (Abajo en el margen)
+    // 2. Botón Izquierda (Abajo a la izquierda)
     this.btnLeft = makeBtn("◀", {
-      bottom: "12px",
-      left: "12px",
-      width: "68px",
-      height: "68px",
-      fontSize: "26px",
+      bottom: safeBottom,
+      left: "15px",
+      width: "70px",
+      height: "70px",
+      fontSize: "28px",
       backgroundColor: "rgba(41, 128, 185, 0.85)"
     });
 
+    // 3. Botón Derecha (Al lado del de izquierda)
     this.btnRight = makeBtn("▶", {
-      bottom: "12px",
-      left: "90px",
-      width: "68px",
-      height: "68px",
-      fontSize: "26px",
+      bottom: safeBottom,
+      left: "95px",
+      width: "70px",
+      height: "70px",
+      fontSize: "28px",
       backgroundColor: "rgba(41, 128, 185, 0.85)"
     });
 
+    // 4. Botón Turbo (Abajo a la derecha - Estilo Mando Arcade)
     this.btnTurbo = makeBtn("⚡ TURBO", {
-      bottom: "12px",
-      left: "170px",
-      width: "115px",
-      height: "68px",
+      bottom: safeBottom,
+      right: "15px",
+      width: "120px",
+      height: "70px",
       fontSize: "16px",
       backgroundColor: "rgba(230, 126, 34, 0.9)"
     });
 
-    // Eventos de botones mantenidos
+    // Asignación de controles táctiles mantenidos
     const bindHold = (btn, keyName, isTurbo = false) => {
       const start = (e) => {
         e.preventDefault();
@@ -251,7 +256,7 @@ export default class Game {
     bindHold(this.btnRight, "right");
     bindHold(this.btnTurbo, "turbo", true);
 
-    // Evento del botón de Pausa
+    // Evento para pausar
     const togglePause = (e) => {
       e.preventDefault();
       e.stopPropagation();
@@ -671,7 +676,6 @@ export default class Game {
   }
 
   update(dt = 0.016) {
-    // Controlar visibilidad del overlay móvil
     if (this.mobileOverlay) {
       if (this.isMobile && this.state === "PLAYING" && !this.isPaused) {
         this.mobileOverlay.style.display = "block";
