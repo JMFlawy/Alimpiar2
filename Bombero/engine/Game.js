@@ -3,13 +3,13 @@ export default class Game {
     this.canvas = canvas;
     this.ctx = ctx;
 
-    // Detectar si es dispositivo móvil o pantalla táctil
+    // Detectar dispositivo móvil o táctil
     this.isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || ('ontouchstart' in window);
 
-    // Ajustar tamaño inicial del canvas
+    // Ajustar resolución y proporciones de pantalla
     this.fitCanvasToScreen();
 
-    // Suelo de la carretera en el 82% de la pantalla
+    // Suelo de la carretera en el 82% de la altura de pantalla
     this.groundY = Math.floor(this.height * 0.82);
 
     // ESTADOS DEL JUEGO: "COVER", "INTRO", "PLAYING", "WIN_BANNER", "FINAL_VIDEO", "ENDED_BLACK"
@@ -33,19 +33,22 @@ export default class Game {
     // Registro de teclas
     this.keys = {};
 
-    // Velocidades con DPR limitado (Máximo 1.5 en móviles para evitar lag)
-    const dpr = this.getDPR();
-    this.baseScrollSpeed = 0.35 * dpr;
+    // --- CONFIGURACIÓN PROPORCIONAL DE VELOCIDADES ---
+    // Velocidades ajustadas proporcionalmente al ancho de la pantalla para una excelente agilidad
+    this.baseScrollSpeed = this.width * 0.0032; 
     this.scrollSpeed = this.baseScrollSpeed;
     this.roadOffsetX = 0;
 
-    // --- CONFIGURACIÓN DEL CAMIÓN ---
+    // --- CONFIGURACIÓN DEL CAMIÓN (PROPORCIONAL A LA PANTALLA) ---
+    const truckHeight = Math.floor(this.height * 0.28);
+    const truckWidth = Math.floor(truckHeight * (260 / 245));
+
     this.truck = {
-      x: 90 * dpr,
-      y: this.groundY - (150 * dpr),
-      width: 260 * dpr,
-      height: 245 * dpr,
-      speed: 2.5 * dpr
+      x: this.width * 0.08,
+      y: this.groundY - truckHeight + (5 * this.getDPR()),
+      width: truckWidth,
+      height: truckHeight,
+      speed: this.width * 0.0085 // Camión rápido y reactivo al teclado/controles
     };
 
     // --- CARGA DE ASSETS EN IMÁGENES ---
@@ -70,14 +73,12 @@ export default class Game {
     this.waterImage = new Image();
     this.waterImage.src = "assets/agua.png";
 
-    // Cartel Falta (HUD) y Terminado
     this.faltaImage = new Image();
     this.faltaImage.src = "assets/falta.png";
 
     this.terminadoImage = new Image();
     this.terminadoImage.src = "assets/terminado.png";
 
-    // Carga de las 3 imágenes de edificios
     this.buildingImages = [new Image(), new Image(), new Image()];
     this.buildingImages[0].src = "assets/edificios1.png";
     this.buildingImages[1].src = "assets/edificios2.png";
@@ -136,9 +137,8 @@ export default class Game {
     this.bindEvents();
   }
 
-  // Obtener DPR optimizado (Topado a 1.5 en móviles para evitar cámara lenta)
   getDPR() {
-    return Math.min(window.devicePixelRatio || 1, this.isMobile ? 1.25 : 2.0);
+    return Math.min(window.devicePixelRatio || 1, this.isMobile ? 1.5 : 2.0);
   }
 
   fitCanvasToScreen() {
@@ -156,17 +156,20 @@ export default class Game {
     this.height = this.canvas.height;
   }
 
-  resize(newWidth, newHeight) {
+  resize() {
     this.fitCanvasToScreen();
     const dpr = this.getDPR();
 
     this.groundY = Math.floor(this.height * 0.82);
     
-    this.truck.y = this.groundY - (150 * dpr);
-    this.truck.width = 260 * dpr;
-    this.truck.height = 245 * dpr;
-    this.truck.speed = 2.5 * dpr;
-    this.baseScrollSpeed = 0.35 * dpr;
+    const truckHeight = Math.floor(this.height * 0.28);
+    const truckWidth = Math.floor(truckHeight * (260 / 245));
+
+    this.truck.height = truckHeight;
+    this.truck.width = truckWidth;
+    this.truck.y = this.groundY - truckHeight + (5 * dpr);
+    this.truck.speed = this.width * 0.0085;
+    this.baseScrollSpeed = this.width * 0.0032;
 
     const maxX = this.width - this.truck.width - (10 * dpr);
     this.truck.x = Math.max(10 * dpr, Math.min(this.truck.x, maxX));
@@ -195,7 +198,7 @@ export default class Game {
   createBird(flockType, initialSpawn = false) {
     const dpr = this.getDPR();
     const direction = Math.random() < 0.7 ? 1 : -1; 
-    const baseSpeed = (0.25 + Math.random() * 0.2) * dpr;
+    const baseSpeed = (0.5 + Math.random() * 0.4) * dpr;
     
     let x;
     if (initialSpawn) {
@@ -293,7 +296,6 @@ export default class Game {
     }
   }
 
-  // --- CONTROL DE AUDIO Y TRANSICIONES ---
   playSound(audio) {
     if (!audio) return;
     audio.play().catch(() => {});
@@ -500,16 +502,16 @@ export default class Game {
 
   handlePauseMenuClick() {
     const dpr = this.getDPR();
-    const panelW = 380 * dpr;
-    const panelH = 220 * dpr;
+    const panelW = Math.min(this.width * 0.85, 380 * dpr);
+    const panelH = Math.min(this.height * 0.65, 220 * dpr);
     const panelY = (this.height - panelH) / 2;
 
-    const btnW = 280 * dpr;
+    const btnW = panelW * 0.8;
     const btnH = 45 * dpr;
     const btnX = (this.width - btnW) / 2;
 
-    const resumeY = panelY + (80 * dpr);
-    const menuY = panelY + (140 * dpr);
+    const resumeY = panelY + (panelH * 0.35);
+    const menuY = panelY + (panelH * 0.65);
 
     if (
       this.aim.x >= btnX && this.aim.x <= btnX + btnW &&
@@ -529,12 +531,11 @@ export default class Game {
     }
   }
 
-  // Bucle de juego con Delta Time para evitar el efecto "cámara lenta"
   start() {
     let lastTime = performance.now();
 
     const loop = (now) => {
-      const dt = Math.min((now - lastTime) / 1000, 0.1); // Límite de seguridad
+      const dt = Math.min((now - lastTime) / 1000, 0.1); 
       lastTime = now;
 
       this.update(dt);
@@ -548,19 +549,16 @@ export default class Game {
   update(dt = 0.016) {
     if (this.state !== "PLAYING" || this.isPaused) return;
 
-    // Factor multiplicador basado en 60 FPS estables (dtFactor = 1.0 a 60 FPS)
     const dtFactor = dt * 60;
-
     this.gameTime += dt * 1000;
     const dpr = this.getDPR();
 
     this.isTurbo = !!this.keys["Control"];
-    const turboMultiplier = this.isTurbo ? 5.5 : 1.0;
+    const turboMultiplier = this.isTurbo ? 3.2 : 1.0; 
     
     const sprayFactor = this.isSpraying ? 0.85 : 1.0; 
     this.scrollSpeed = this.baseScrollSpeed * turboMultiplier * sprayFactor;
 
-    // --- SONIDOS DINÁMICOS EN TIEMPO REAL ---
     if (this.sndMusica.paused) this.playSound(this.sndMusica);
     if (this.sndMarcha.paused) this.playSound(this.sndMarcha);
 
@@ -652,7 +650,7 @@ export default class Game {
       if (e.life <= 0) this.embers.splice(i, 1);
     }
 
-    // --- ACTUALIZAR CHARCOS DE AGUA EN LA CARRETERA ---
+    // --- CHARCOS ---
     for (let i = this.puddles.length - 1; i >= 0; i--) {
       const p = this.puddles[i];
       p.x -= this.scrollSpeed * dtFactor;
@@ -716,7 +714,7 @@ export default class Game {
     }
 
     if (this.isTurbo) {
-      for (let i = 0; i < 2; i++) {
+      for (let i = 0; i < 3; i++) {
         this.turboFlames.push({
           x: exhaustX,
           y: exhaustY + (Math.random() - 0.5) * (8 * dpr),
@@ -735,7 +733,7 @@ export default class Game {
           x: this.width + (50 * dpr),
           y: Math.random() * this.height,
           length: (40 + Math.random() * 80) * dpr,
-          speed: (14 + Math.random() * 8) * dpr,
+          speed: (18 + Math.random() * 10) * dpr,
           alpha: 0.3 + Math.random() * 0.4
         });
       }
@@ -757,7 +755,7 @@ export default class Game {
       if (l.x + l.length < 0) this.speedLines.splice(i, 1);
     }
 
-    // --- MOVER Y COMPROBAR BOLAS DE AGUA ---
+    // --- BOLAS DE AGUA ---
     for (let i = this.waterParticles.length - 1; i >= 0; i--) {
       const p = this.waterParticles[i];
       
@@ -766,7 +764,6 @@ export default class Game {
       p.vy += (0.22 * dpr) * dtFactor; 
       p.life -= dtFactor;
 
-      // Caída de agua al suelo
       if (p.y >= this.groundY - (5 * dpr)) {
         if (Math.random() < 0.2) {
           this.puddles.push({
@@ -785,7 +782,6 @@ export default class Game {
 
       let hitFire = false;
 
-      // Colisión con fuegos
       for (let j = this.fires.length - 1; j >= 0; j--) {
         const f = this.fires[j];
         const dist = Math.hypot(p.x - f.x, p.y - f.y);
@@ -805,7 +801,7 @@ export default class Game {
           });
 
           if (f.size <= 5 * dpr) {
-            for (let k = 0; k < 4; k++) {
+            for (let k = 0; k < 5; k++) {
               this.extinguishEffects.push({
                 x: f.x + (Math.random() - 0.5) * (15 * dpr),
                 y: f.y + (Math.random() - 0.5) * (15 * dpr),
@@ -834,7 +830,7 @@ export default class Game {
               this.sndClear.currentTime = 0;
               this.playSound(this.sndClear);
 
-              for (let s = 0; s < 12; s++) {
+              for (let s = 0; s < 14; s++) {
                 this.cleanSparkles.push({
                   x: parentBuilding.x + Math.random() * parentBuilding.width,
                   y: parentBuilding.y + Math.random() * parentBuilding.height,
@@ -912,7 +908,7 @@ export default class Game {
       if (imp.life <= 0) this.waterImpacts.splice(i, 1);
     }
 
-    // GENERAR NUEVO CHORRO
+    // GENERAR CHORRO
     if (this.isSpraying) {
       const nozzleX = this.truck.x + this.truck.width * 0.98;
       const nozzleY = this.truck.y + truckBob + (60 * dpr);
@@ -926,7 +922,7 @@ export default class Game {
         const effectiveDist = Math.min(rawDist, maxDist);
         const angleToAim = Math.atan2(rawDy, rawDx);
 
-        const muzzleSpeed = 15 * dpr; 
+        const muzzleSpeed = 18 * dpr; 
         const travelFrames = Math.max(3, Math.floor(effectiveDist / muzzleSpeed));
 
         const vxBase = Math.cos(angleToAim) * muzzleSpeed;
@@ -1039,7 +1035,7 @@ export default class Game {
       this.ctx.restore();
     }
 
-    // 4. EDIFICIOS (Sombras desactivadas en móvil para mantener 60 FPS)
+    // 4. EDIFICIOS
     this.buildings.forEach(b => {
       if (b.x + b.width > -50 * dpr && b.x < this.width + (50 * dpr)) {
         this.ctx.save();
@@ -1255,7 +1251,24 @@ export default class Game {
     this.ctx.fillRect(0, 0, this.width, this.height);
 
     if (this.introVideo && this.introVideo.readyState >= 2) {
-      this.ctx.drawImage(this.introVideo, 0, 0, this.width, this.height);
+      const vW = this.introVideo.videoWidth || this.width;
+      const vH = this.introVideo.videoHeight || this.height;
+      const vRatio = vW / vH;
+      const cRatio = this.width / this.height;
+
+      let drawW, drawH;
+      if (cRatio > vRatio) {
+        drawH = this.height;
+        drawW = drawH * vRatio;
+      } else {
+        drawW = this.width;
+        drawH = drawW / vRatio;
+      }
+
+      const drawX = (this.width - drawW) / 2;
+      const drawY = (this.height - drawH) / 2;
+
+      this.ctx.drawImage(this.introVideo, drawX, drawY, drawW, drawH);
 
       const currentTime = this.introVideo.currentTime || 0;
       const duration = this.introVideo.duration || 10;
@@ -1282,7 +1295,24 @@ export default class Game {
     this.ctx.fillRect(0, 0, this.width, this.height);
 
     if (this.finalVideo && this.finalVideo.readyState >= 2) {
-      this.ctx.drawImage(this.finalVideo, 0, 0, this.width, this.height);
+      const vW = this.finalVideo.videoWidth || this.width;
+      const vH = this.finalVideo.videoHeight || this.height;
+      const vRatio = vW / vH;
+      const cRatio = this.width / this.height;
+
+      let drawW, drawH;
+      if (cRatio > vRatio) {
+        drawH = this.height;
+        drawW = drawH * vRatio;
+      } else {
+        drawW = this.width;
+        drawH = drawW / vRatio;
+      }
+
+      const drawX = (this.width - drawW) / 2;
+      const drawY = (this.height - drawH) / 2;
+
+      this.ctx.drawImage(this.finalVideo, drawX, drawY, drawW, drawH);
 
       const currentTime = this.finalVideo.currentTime || 0;
       const duration = this.finalVideo.duration || 10;
@@ -1443,7 +1473,7 @@ export default class Game {
 
     const imgX = 20 * dpr;
     const imgY = 20 * dpr;
-    const targetH = 70 * dpr;
+    const targetH = Math.floor(this.height * 0.11);
 
     if (this.faltaImage.complete && this.faltaImage.naturalWidth > 0) {
       const aspect = this.faltaImage.naturalWidth / this.faltaImage.naturalHeight;
@@ -1452,7 +1482,7 @@ export default class Game {
       this.ctx.drawImage(this.faltaImage, imgX, imgY, targetW, targetH);
 
       const textStr = `${this.remainingBuildings} / ${this.totalBuildings}`;
-      const fontSize = Math.floor(22 * dpr);
+      const fontSize = Math.floor(targetH * 0.32);
       this.ctx.font = `bold ${fontSize}px Arial`;
 
       const textWidth = this.ctx.measureText(textStr).width;
@@ -1495,8 +1525,8 @@ export default class Game {
     this.ctx.fillStyle = "rgba(0, 0, 0, 0.75)";
     this.ctx.fillRect(0, 0, this.width, this.height);
 
-    const panelW = 340 * dpr;
-    const panelH = 200 * dpr;
+    const panelW = Math.min(this.width * 0.85, 380 * dpr);
+    const panelH = Math.min(this.height * 0.65, 220 * dpr);
     const panelX = (this.width - panelW) / 2;
     const panelY = (this.height - panelH) / 2;
 
@@ -1509,26 +1539,26 @@ export default class Game {
     this.ctx.fillStyle = "#ffd700";
     this.ctx.textAlign = "center";
     this.ctx.font = `bold ${Math.floor(22 * dpr)}px Arial`;
-    this.ctx.fillText("JUEGO EN PAUSA", this.width / 2, panelY + (40 * dpr));
+    this.ctx.fillText("JUEGO EN PAUSA", this.width / 2, panelY + (panelH * 0.22));
 
-    const btnW = 250 * dpr;
-    const btnH = 40 * dpr;
+    const btnW = panelW * 0.8;
+    const btnH = 45 * dpr;
     const btnX = (this.width - btnW) / 2;
 
-    const resumeY = panelY + (75 * dpr);
-    const menuY = panelY + (130 * dpr);
+    const resumeY = panelY + (panelH * 0.38);
+    const menuY = panelY + (panelH * 0.68);
 
     this.ctx.fillStyle = "#00b894";
     this.ctx.fillRect(btnX, resumeY, btnW, btnH);
     this.ctx.fillStyle = "#ffffff";
     this.ctx.font = `bold ${Math.floor(16 * dpr)}px Arial`;
-    this.ctx.fillText("▶ REANUDAR (ESC)", this.width / 2, resumeY + (25 * dpr));
+    this.ctx.fillText("▶ REANUDAR (ESC)", this.width / 2, resumeY + (btnH * 0.62));
 
     this.ctx.fillStyle = "#d63031";
     this.ctx.fillRect(btnX, menuY, btnW, btnH);
     this.ctx.fillStyle = "#ffffff";
     this.ctx.font = `bold ${Math.floor(16 * dpr)}px Arial`;
-    this.ctx.fillText("🏠 MENÚ PRINCIPAL", this.width / 2, menuY + (25 * dpr));
+    this.ctx.fillText("🏠 MENÚ PRINCIPAL", this.width / 2, menuY + (btnH * 0.62));
 
     this.ctx.restore();
   }
@@ -1578,7 +1608,6 @@ export default class Game {
     this.ctx.save();
     this.ctx.translate(wx, wy);
 
-    // 1. Neumático exterior
     this.ctx.fillStyle = "#181c24";
     this.ctx.beginPath();
     this.ctx.arc(0, 0, radius, 0, Math.PI * 2);
@@ -1588,7 +1617,6 @@ export default class Game {
     this.ctx.lineWidth = 2.5 * dpr;
     this.ctx.stroke();
 
-    // 2. Llanta interior
     this.ctx.fillStyle = "#333a48";
     this.ctx.beginPath();
     this.ctx.arc(0, 0, radius * 0.62, 0, Math.PI * 2);
@@ -1598,7 +1626,6 @@ export default class Game {
     this.ctx.lineWidth = 2 * dpr;
     this.ctx.stroke();
 
-    // 3. Muescas giratorias
     this.ctx.rotate(angle);
     this.ctx.strokeStyle = "#181c24";
     this.ctx.lineWidth = 2.5 * dpr;
@@ -1611,7 +1638,6 @@ export default class Game {
       this.ctx.stroke();
     }
 
-    // 4. Centro / Tapacubos
     this.ctx.fillStyle = "#181c24";
     this.ctx.beginPath();
     this.ctx.arc(0, 0, radius * 0.24, 0, Math.PI * 2);
@@ -1643,7 +1669,7 @@ export default class Game {
     this.ctx.fill();
     this.ctx.restore();
 
-    // Imagen base
+    // Imagen base del camión
     const isFrame1 = Math.floor(this.gameTime / 10000) % 2 === 0;
     const currentTruckImg = isFrame1 ? this.truckImg1 : this.truckImg2;
 
@@ -1665,7 +1691,7 @@ export default class Game {
     this.drawWheel(rearWheelX, wheelY, wheelRadius, wheelAngle);
     this.drawWheel(frontWheelX, wheelY, wheelRadius, wheelAngle);
 
-    // Sirena en turbo
+    // --- SIRENA LUMINOSA RESTAURADA (DEGRADADO Y DESTELLO COMPLETO) ---
     if (this.isTurbo) {
       this.ctx.save();
 
@@ -1676,16 +1702,30 @@ export default class Game {
 
       const flash = Math.floor(this.gameTime / 90) % 2 === 0;
 
+      // LUZ AZUL
       const blueAlpha = flash ? 0.95 : 0.25;
-      this.ctx.fillStyle = `rgba(0, 160, 255, ${blueAlpha})`;
+      const blueRadius = (flash ? 24 : 12) * dpr;
+      let gradBlue = this.ctx.createRadialGradient(sirenBlueX, sirenBlueY, 2 * dpr, sirenBlueX, sirenBlueY, blueRadius);
+      gradBlue.addColorStop(0, `rgba(255, 255, 255, ${blueAlpha})`);
+      gradBlue.addColorStop(0.35, `rgba(0, 160, 255, ${blueAlpha})`);
+      gradBlue.addColorStop(1, "rgba(0, 160, 255, 0)");
+
+      this.ctx.fillStyle = gradBlue;
       this.ctx.beginPath();
-      this.ctx.arc(sirenBlueX, sirenBlueY, 14 * dpr, 0, Math.PI * 2);
+      this.ctx.arc(sirenBlueX, sirenBlueY, blueRadius, 0, Math.PI * 2);
       this.ctx.fill();
 
+      // LUZ ROJA
       const redAlpha = !flash ? 0.95 : 0.25;
-      this.ctx.fillStyle = `rgba(255, 40, 40, ${redAlpha})`;
+      const redRadius = (!flash ? 24 : 12) * dpr;
+      let gradRed = this.ctx.createRadialGradient(sirenRedX, sirenY, 2 * dpr, sirenRedX, sirenY, redRadius);
+      gradRed.addColorStop(0, `rgba(255, 255, 255, ${redAlpha})`);
+      gradRed.addColorStop(0.35, `rgba(255, 40, 40, ${redAlpha})`);
+      gradRed.addColorStop(1, "rgba(255, 40, 40, 0)");
+
+      this.ctx.fillStyle = gradRed;
       this.ctx.beginPath();
-      this.ctx.arc(sirenRedX, sirenY, 14 * dpr, 0, Math.PI * 2);
+      this.ctx.arc(sirenRedX, sirenY, redRadius, 0, Math.PI * 2);
       this.ctx.fill();
 
       this.ctx.restore();
