@@ -5,14 +5,14 @@ export default class Player {
 
     this.width = 72;
     this.height = 108;
-    const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
-    this.speed = isMobile ? 3.6 : 3.6;
+
+    // Velocidades y física base unificadas
+    this.speed = 3.6;
+    this.gravity = 0.15;
+    this.jumpStrength = -5;
 
     this.vx = 0;
     this.vy = 0;
-
-    this.gravity = isMobile ? 0.15 : 0.15;
-    this.jumpStrength = -5;
 
     this.onGround = false;
     this.wasGrounded = false;
@@ -58,7 +58,7 @@ export default class Player {
     });
   }
 
-  update(keys, worldWidth, groundY, platforms) {
+  update(keys, worldWidth, groundY, platforms, dtFactor = 1) {
     this.vx = 0;
     if (keys["ArrowLeft"]) {
       this.vx = -this.speed;
@@ -71,7 +71,8 @@ export default class Player {
 
     // Bajar de plataformas
     if (this.passThroughTimer > 0) {
-      this.passThroughTimer--;
+      this.passThroughTimer -= dtFactor;
+      if (this.passThroughTimer < 0) this.passThroughTimer = 0;
     }
 
     if ((keys["ArrowDown"] || keys["s"] || keys["S"]) && this.onPlatform && this.passThroughTimer === 0) {
@@ -90,9 +91,10 @@ export default class Player {
       this.onPlatform = false;
     }
 
-    this.vy += this.gravity;
-    this.x += this.vx;
-    this.y += this.vy;
+    // Aplicar física escalada por Delta Time
+    this.vy += this.gravity * dtFactor;
+    this.x += this.vx * dtFactor;
+    this.y += this.vy * dtFactor;
 
     if (this.x < 0) this.x = 0;
     if (this.x + this.width > worldWidth) this.x = worldWidth - this.width;
@@ -124,7 +126,7 @@ export default class Player {
       }
     }
 
-    // Colisión suelo
+    // Colisión con el suelo
     if (!this.onPlatform && this.y + this.height >= groundY) {
       this.y = groundY - this.height;
       this.vy = 0;
@@ -132,6 +134,7 @@ export default class Player {
       this.jumpedFromPlatform = false;
     }
 
+    // Selección de animación según estado
     if (!this.onGround) {
       this.setAnimation("jump");
     } else if (this.vx !== 0) {
@@ -144,7 +147,7 @@ export default class Player {
       }
     }
 
-    this.updateAnimation();
+    this.updateAnimation(dtFactor);
   }
 
   setAnimation(name) {
@@ -155,14 +158,14 @@ export default class Player {
     }
   }
 
-  updateAnimation() {
+  updateAnimation(dtFactor = 1) {
     const frames = this.getCurrentFrames();
     if (!frames || frames.length === 0) return;
 
     const speed = this.animationSpeeds[this.currentAnim] || 24;
 
-    this.animFrameCounter++;
-    if (this.animFrameCounter >= speed) {
+    this.animFrameCounter += dtFactor;
+    if (this.animFrameCounter >= speed / 16) { 
       this.animFrameCounter = 0;
       this.currentFrameIndex++;
       if (this.currentFrameIndex >= frames.length) {
