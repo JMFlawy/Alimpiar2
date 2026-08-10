@@ -32,23 +32,16 @@ export default class Game {
     this.isSpraying = false;
     this.aim = { x: this.width / 2, y: this.height / 2 };
 
-    // Registro de teclas físicas y botones virtuales para móvil
+    // Registro de teclas físicas y móviles
     this.keys = {};
     this.mobileKeys = { left: false, right: false, turbo: false };
 
-    // Posiciones de botones táctiles en la pantalla virtual (1280x720)
-    this.mobileButtons = {
-      left: { x: 30, y: 610, w: 90, h: 85, label: "◀" },
-      right: { x: 135, y: 610, w: 90, h: 85, label: "▶" },
-      turbo: { x: 240, y: 610, w: 140, h: 85, label: "⚡ TURBO" }
-    };
-
     // --- VELOCIDADES ESTABLES ---
-    this.baseScrollSpeed = 1.2;
+    this.baseScrollSpeed = 1.3;
     this.scrollSpeed = this.baseScrollSpeed;
     this.roadOffsetX = 0;
 
-    // Longitud total del circuito para el bucle continuo perfecto
+    // Longitud total del circuito para el bucle continuo
     this.totalCircuitLength = 0;
 
     // --- CONFIGURACIÓN ESTABLE DEL CAMIÓN ---
@@ -141,7 +134,141 @@ export default class Game {
     this.initBirds();
     this.initCity();
 
+    this.createMobileUI();
     this.bindEvents();
+  }
+
+  // --- CREACIÓN DE INTERFAZ HTML EN LOS MÁRGENES NEGROS DEL MÓVIL ---
+  createMobileUI() {
+    if (!this.isMobile) return;
+
+    // Eliminar overlay previo si existiera
+    const oldOverlay = document.getElementById("mobile-controls-overlay");
+    if (oldOverlay) oldOverlay.remove();
+
+    this.mobileOverlay = document.createElement("div");
+    this.mobileOverlay.id = "mobile-controls-overlay";
+    this.mobileOverlay.style.position = "fixed";
+    this.mobileOverlay.style.top = "0";
+    this.mobileOverlay.style.left = "0";
+    this.mobileOverlay.style.width = "100vw";
+    this.mobileOverlay.style.height = "100vh";
+    this.mobileOverlay.style.pointerEvents = "none";
+    this.mobileOverlay.style.zIndex = "9999";
+    this.mobileOverlay.style.display = "none";
+
+    document.body.appendChild(this.mobileOverlay);
+
+    const makeBtn = (html, cssStyles) => {
+      const btn = document.createElement("button");
+      btn.innerHTML = html;
+      btn.style.position = "absolute";
+      btn.style.pointerEvents = "auto";
+      btn.style.userSelect = "none";
+      btn.style.webkitUserSelect = "none";
+      btn.style.touchAction = "manipulation";
+      btn.style.border = "2px solid rgba(255, 255, 255, 0.8)";
+      btn.style.borderRadius = "12px";
+      btn.style.fontWeight = "bold";
+      btn.style.color = "#ffffff";
+      btn.style.boxShadow = "0 4px 10px rgba(0, 0, 0, 0.5)";
+      btn.style.backdropFilter = "blur(4px)";
+      Object.assign(btn.style, cssStyles);
+      this.mobileOverlay.appendChild(btn);
+      return btn;
+    };
+
+    // 1. Botón de Pausa (Arriba a la derecha en el margen)
+    this.btnPause = makeBtn("⏸", {
+      top: "12px",
+      right: "12px",
+      width: "48px",
+      height: "48px",
+      fontSize: "22px",
+      backgroundColor: "rgba(214, 48, 49, 0.85)"
+    });
+
+    // 2. Controles de Movimiento (Abajo en el margen)
+    this.btnLeft = makeBtn("◀", {
+      bottom: "12px",
+      left: "12px",
+      width: "68px",
+      height: "68px",
+      fontSize: "26px",
+      backgroundColor: "rgba(41, 128, 185, 0.85)"
+    });
+
+    this.btnRight = makeBtn("▶", {
+      bottom: "12px",
+      left: "90px",
+      width: "68px",
+      height: "68px",
+      fontSize: "26px",
+      backgroundColor: "rgba(41, 128, 185, 0.85)"
+    });
+
+    this.btnTurbo = makeBtn("⚡ TURBO", {
+      bottom: "12px",
+      left: "170px",
+      width: "115px",
+      height: "68px",
+      fontSize: "16px",
+      backgroundColor: "rgba(230, 126, 34, 0.9)"
+    });
+
+    // Eventos de botones mantenidos
+    const bindHold = (btn, keyName, isTurbo = false) => {
+      const start = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (isTurbo && !this.mobileKeys.turbo) {
+          this.sndTurbo.currentTime = 0;
+          this.playSound(this.sndTurbo);
+        }
+        this.mobileKeys[keyName] = true;
+        btn.style.transform = "scale(0.92)";
+        btn.style.backgroundColor = "#f1c40f";
+        btn.style.color = "#000000";
+      };
+
+      const end = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        this.mobileKeys[keyName] = false;
+        btn.style.transform = "scale(1)";
+        btn.style.backgroundColor = isTurbo ? "rgba(230, 126, 34, 0.9)" : "rgba(41, 128, 185, 0.85)";
+        btn.style.color = "#ffffff";
+      };
+
+      btn.addEventListener("touchstart", start, { passive: false });
+      btn.addEventListener("touchend", end, { passive: false });
+      btn.addEventListener("touchcancel", end, { passive: false });
+      btn.addEventListener("mousedown", start);
+      btn.addEventListener("mouseup", end);
+    };
+
+    bindHold(this.btnLeft, "left");
+    bindHold(this.btnRight, "right");
+    bindHold(this.btnTurbo, "turbo", true);
+
+    // Evento del botón de Pausa
+    const togglePause = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (this.state === "PLAYING") {
+        this.isPaused = !this.isPaused;
+        if (this.isPaused) {
+          this.isSpraying = false;
+          this.pauseAllSounds();
+        } else {
+          this.playSound(this.sndMusica);
+          this.playSound(this.sndMarcha);
+        }
+      }
+    };
+
+    this.btnPause.addEventListener("touchstart", togglePause, { passive: false });
+    this.btnPause.addEventListener("click", togglePause);
   }
 
   fitCanvasToScreen() {
@@ -213,13 +340,12 @@ export default class Game {
     };
   }
 
-  // --- INICIALIZACIÓN DEL CIRCUITO FIJO DE LOS 9 EDIFICIOS ---
   initCity() {
     this.buildings = [];
     this.fires = [];
 
-    const fixedGap = 220; // Distancia fija y uniforme entre cada edificio
-    let currentX = this.width * 0.75; // El primer edificio aparece por la derecha
+    const fixedGap = 220;
+    let currentX = this.width * 0.75;
 
     for (let i = 0; i < this.totalBuildings; i++) {
       const imgIdx = i % this.buildingImages.length;
@@ -242,7 +368,6 @@ export default class Game {
 
       this.buildings.push(building);
 
-      // Generar fuegos garantizados
       const windowStepY = 55;
       const windowStepX = 42;
       let fireCount = 0;
@@ -276,11 +401,9 @@ export default class Game {
         });
       }
 
-      // Siguiente posición X en la fila
       currentX += baseW + fixedGap;
     }
 
-    // Calcular exactamente la longitud de 1 vuelta completa al circuito
     const firstBuilding = this.buildings[0];
     const lastBuilding = this.buildings[this.buildings.length - 1];
     this.totalCircuitLength = (lastBuilding.x + lastBuilding.width + fixedGap) - firstBuilding.x;
@@ -486,64 +609,20 @@ export default class Game {
           return;
         }
 
-        const rect = this.canvas.getBoundingClientRect();
-
-        this.mobileKeys.left = false;
-        this.mobileKeys.right = false;
-        this.mobileKeys.turbo = false;
-
-        let sprayTouch = null;
-
-        for (let i = 0; i < e.touches.length; i++) {
-          const t = e.touches[i];
-          const vx = (t.clientX - rect.left) * (this.width / rect.width);
-          const vy = (t.clientY - rect.top) * (this.height / rect.height);
-
-          let hitButton = false;
-
-          if (this.isMobile) {
-            const bL = this.mobileButtons.left;
-            if (vx >= bL.x && vx <= bL.x + bL.w && vy >= bL.y && vy <= bL.y + bL.h) {
-              this.mobileKeys.left = true;
-              hitButton = true;
-            }
-
-            const bR = this.mobileButtons.right;
-            if (vx >= bR.x && vx <= bR.x + bR.w && vy >= bR.y && vy <= bR.y + bR.h) {
-              this.mobileKeys.right = true;
-              hitButton = true;
-            }
-
-            const bT = this.mobileButtons.turbo;
-            if (vx >= bT.x && vx <= bT.x + bT.w && vy >= bT.y && vy <= bT.y + bT.h) {
-              if (!this.mobileKeys.turbo) {
-                this.sndTurbo.currentTime = 0;
-                this.playSound(this.sndTurbo);
-              }
-              this.mobileKeys.turbo = true;
-              hitButton = true;
-            }
-          }
-
-          if (!hitButton) {
-            sprayTouch = { x: vx, y: vy };
-          }
-        }
-
-        if (sprayTouch) {
-          this.aim.x = sprayTouch.x;
-          this.aim.y = sprayTouch.y;
+        if (e.touches.length > 0) {
+          const t = e.touches[0];
+          const rect = this.canvas.getBoundingClientRect();
+          this.aim.x = (t.clientX - rect.left) * (this.width / rect.width);
+          this.aim.y = (t.clientY - rect.top) * (this.height / rect.height);
           this.isSpraying = true;
-        } else {
-          this.isSpraying = false;
         }
       }
     };
 
     this.canvas.addEventListener("touchstart", (e) => { processTouch(e); e.preventDefault(); }, { passive: false });
     this.canvas.addEventListener("touchmove", (e) => { processTouch(e); e.preventDefault(); }, { passive: false });
-    this.canvas.addEventListener("touchend", (e) => { processTouch(e); e.preventDefault(); }, { passive: false });
-    this.canvas.addEventListener("touchcancel", (e) => { processTouch(e); e.preventDefault(); }, { passive: false });
+    this.canvas.addEventListener("touchend", () => this.isSpraying = false);
+    this.canvas.addEventListener("touchcancel", () => this.isSpraying = false);
   }
 
   handlePauseMenuClick() {
@@ -592,6 +671,15 @@ export default class Game {
   }
 
   update(dt = 0.016) {
+    // Controlar visibilidad del overlay móvil
+    if (this.mobileOverlay) {
+      if (this.isMobile && this.state === "PLAYING" && !this.isPaused) {
+        this.mobileOverlay.style.display = "block";
+      } else {
+        this.mobileOverlay.style.display = "none";
+      }
+    }
+
     if (this.state !== "PLAYING" || this.isPaused) return;
 
     const dtFactor = dt * 60;
@@ -656,7 +744,6 @@ export default class Game {
       }
     });
 
-    // Mover edificios y fuegos
     this.buildings.forEach(b => {
       b.x -= this.scrollSpeed * dtFactor;
       if (b.cleanPulse > 0) b.cleanPulse -= 0.02 * dtFactor;
@@ -666,13 +753,11 @@ export default class Game {
     this.extinguishEffects.forEach(e => e.x -= this.scrollSpeed * dtFactor);
     this.cleanSparkles.forEach(s => s.x -= this.scrollSpeed * dtFactor);
 
-    // --- BUCLE PERFECTO DEL CIRCUITO ---
-    // Cuando un edificio sale por la izquierda, avanza una vuelta entera exacta del circuito
+    // --- BUCLE CONTINUO DEL CIRCUITO ---
     this.buildings.forEach(b => {
       if (b.x + b.width < -100) {
         b.x += this.totalCircuitLength;
 
-        // Desplazar sus fuegos pendientes la misma distancia exacta
         this.fires.forEach(f => {
           if (f.buildingId === b.id) {
             f.x += this.totalCircuitLength;
@@ -1190,12 +1275,7 @@ export default class Game {
 
     this.ctx.restore();
 
-    // 15. BOTONES MÓVILES TÁCTILES
-    if (this.isMobile && this.state === "PLAYING" && !this.isPaused) {
-      this.drawMobileControls();
-    }
-
-    // 16. HUD FIJO
+    // 15. HUD FIJO
     this.drawHUD();
 
     if (this.state === "WIN_BANNER") {
@@ -1205,47 +1285,6 @@ export default class Game {
     if (this.isPaused) {
       this.drawPauseMenu();
     }
-  }
-
-  drawMobileControls() {
-    this.ctx.save();
-
-    const btns = [
-      { key: "left", ...this.mobileButtons.left, label: "◀", color: "#2980b9" },
-      { key: "right", ...this.mobileButtons.right, label: "▶", color: "#2980b9" },
-      { key: "turbo", ...this.mobileButtons.turbo, label: "⚡ TURBO", color: "#e67e22" }
-    ];
-
-    btns.forEach(b => {
-      const isPressed = this.mobileKeys[b.key];
-
-      this.ctx.save();
-      this.ctx.fillStyle = isPressed ? "#f1c40f" : b.color;
-      this.ctx.globalAlpha = isPressed ? 0.95 : 0.65;
-
-      this.ctx.beginPath();
-      if (this.ctx.roundRect) {
-        this.ctx.roundRect(b.x, b.y, b.w, b.h, 16);
-      } else {
-        this.ctx.rect(b.x, b.y, b.w, b.h);
-      }
-      this.ctx.fill();
-
-      this.ctx.strokeStyle = "#ffffff";
-      this.ctx.lineWidth = 3;
-      this.ctx.stroke();
-
-      this.ctx.globalAlpha = 1.0;
-      this.ctx.fillStyle = isPressed ? "#000000" : "#ffffff";
-      this.ctx.font = "bold 22px Arial";
-      this.ctx.textAlign = "center";
-      this.ctx.textBaseline = "middle";
-      this.ctx.fillText(b.label, b.x + b.w / 2, b.y + b.h / 2);
-
-      this.ctx.restore();
-    });
-
-    this.ctx.restore();
   }
 
   drawEmbers() {
@@ -1619,7 +1658,7 @@ export default class Game {
     this.ctx.fillRect(btnX, resumeY, btnW, btnH);
     this.ctx.fillStyle = "#ffffff";
     this.ctx.font = "bold 18px Arial";
-    this.ctx.fillText("▶ REANUDAR (ESC)", this.width / 2, resumeY + 28);
+    this.ctx.fillText("▶ REANUDAR", this.width / 2, resumeY + 28);
 
     this.ctx.fillStyle = "#d63031";
     this.ctx.fillRect(btnX, menuY, btnW, btnH);
