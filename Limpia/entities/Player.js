@@ -6,10 +6,10 @@ export default class Player {
     this.width = 72;
     this.height = 108;
 
-    // Velocidades y física base unificadas
-    this.speed = 3.6;
-    this.gravity = 0.15;
-    this.jumpStrength = -5;
+    // --- AJUSTES DE MOVIMIENTO Y FÍSICA ---
+    this.speed = 4.2;          // Un pelín más rápido (antes 3.6)
+    this.jumpStrength = -6.5;  // Salto más rápido e impulsivo (antes -5)
+    this.gravity = 0.25;       // Gravedad compensada para mantener la misma altura (antes 0.15)
 
     this.vx = 0;
     this.vy = 0;
@@ -164,8 +164,9 @@ export default class Player {
 
     const speed = this.animationSpeeds[this.currentAnim] || 24;
 
+    // Acumular tiempo exacto según FPS
     this.animFrameCounter += dtFactor;
-    if (this.animFrameCounter >= speed / 16) { 
+    if (this.animFrameCounter >= speed) { 
       this.animFrameCounter = 0;
       this.currentFrameIndex++;
       if (this.currentFrameIndex >= frames.length) {
@@ -298,7 +299,6 @@ export default class Player {
 
     ctx.save();
 
-    // Aplica la traslucidez ligera (80% opaco / 20% transparente)
     ctx.globalAlpha = 0.8;
 
     // 1. DIBUJAR LA BOLSA DE TRASFONDO
