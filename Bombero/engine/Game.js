@@ -3,11 +3,13 @@ export default class Game {
     this.canvas = canvas;
     this.ctx = ctx;
 
-    // --- RESOLUCIÓN VIRTUAL FIJA (Garantiza física y posiciones idénticas en cualquier pantalla) ---
+    // Detectar móvil o pantalla táctil
+    this.isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || ('ontouchstart' in window);
+
+    // --- RESOLUCIÓN VIRTUAL FIJA (1280x720) ---
     this.width = 1280;
     this.height = 720;
 
-    // Ajustar tamaño del Canvas en pantalla
     this.fitCanvasToScreen();
 
     // Suelo fijo en el 82% de la resolución virtual
@@ -31,11 +33,19 @@ export default class Game {
     this.isSpraying = false;
     this.aim = { x: this.width / 2, y: this.height / 2 };
 
-    // Registro de teclas
+    // Registro de teclas físicas y botones virtuales para móvil
     this.keys = {};
+    this.mobileKeys = { left: false, right: false, turbo: false };
+
+    // Posiciones de botones táctiles en la pantalla virtual (1280x720)
+    this.mobileButtons = {
+      left: { x: 30, y: 610, w: 90, h: 85, label: "◀" },
+      right: { x: 135, y: 610, w: 90, h: 85, label: "▶" },
+      turbo: { x: 240, y: 610, w: 140, h: 85, label: "⚡ TURBO" }
+    };
 
     // --- VELOCIDADES ESTABLES ---
-    this.baseScrollSpeed = 1.3;
+    this.baseScrollSpeed = 1.8;
     this.scrollSpeed = this.baseScrollSpeed;
     this.roadOffsetX = 0;
 
@@ -134,7 +144,6 @@ export default class Game {
     this.bindEvents();
   }
 
-  // --- ESCALADO INTELIGENTE MANTENIENDO PROPORCIÓN ---
   fitCanvasToScreen() {
     this.canvas.width = this.width;
     this.canvas.height = this.height;
@@ -142,7 +151,6 @@ export default class Game {
     const screenW = window.innerWidth;
     const screenH = window.innerHeight;
     
-    // Escala manteniendo 16:9
     const scale = Math.min(screenW / this.width, screenH / this.height);
 
     const cssW = Math.floor(this.width * scale);
@@ -354,11 +362,10 @@ export default class Game {
   bindEvents() {
     window.addEventListener("resize", () => this.resize());
 
-    // Traducción de coordenadas de pantalla a coordenadas del Canvas Virtual (1280x720)
     const updateAim = (e) => {
       const rect = this.canvas.getBoundingClientRect();
-      const clientX = e.clientX || (e.touches && e.touches[0].clientX) || 0;
-      const clientY = e.clientY || (e.touches && e.touches[0].clientY) || 0;
+      const clientX = e.clientX || 0;
+      const clientY = e.clientY || 0;
 
       this.aim.x = (clientX - rect.left) * (this.width / rect.width);
       this.aim.y = (clientY - rect.top) * (this.height / rect.height);
@@ -374,6 +381,7 @@ export default class Game {
       }
     };
 
+    // --- EVENTOS DE TECLADO ---
     window.addEventListener("keydown", (e) => {
       if (this.state === "ENDED_BLACK") {
         window.location.reload();
@@ -429,6 +437,7 @@ export default class Game {
       if (e.key) this.keys[e.key.toLowerCase()] = false;
     });
 
+    // --- EVENTOS DE RATÓN ---
     this.canvas.addEventListener("mousemove", updateAim);
 
     this.canvas.addEventListener("mousedown", (e) => {
@@ -452,30 +461,91 @@ export default class Game {
 
     window.addEventListener("mouseup", () => this.isSpraying = false);
 
-    this.canvas.addEventListener("touchmove", (e) => { updateAim(e); e.preventDefault(); }, { passive: false });
-    this.canvas.addEventListener("touchstart", (e) => {
-      updateAim(e);
+    // --- MANEJO AVANZADO DE MULTITÁCTIL PARA MÓVILES ---
+    const processTouch = (e) => {
       if (this.state === "ENDED_BLACK") {
         window.location.reload();
-        e.preventDefault();
         return;
       }
       if (this.state === "COVER") {
         handleUserInteraction();
-        e.preventDefault();
         return;
       }
+      if (this.state === "INTRO") return;
+
       if (this.state === "PLAYING") {
         if (this.isPaused) {
-          this.handlePauseMenuClick();
+          if (e.touches.length > 0) {
+            const t = e.touches[0];
+            const rect = this.canvas.getBoundingClientRect();
+            this.aim.x = (t.clientX - rect.left) * (this.width / rect.width);
+            this.aim.y = (t.clientY - rect.top) * (this.height / rect.height);
+            this.handlePauseMenuClick();
+          }
           return;
         }
-        this.isSpraying = true;
-      }
-      e.preventDefault();
-    }, { passive: false });
 
-    this.canvas.addEventListener("touchend", () => this.isSpraying = false);
+        const rect = this.canvas.getBoundingClientRect();
+
+        // Reiniciar estado de botones virtuales
+        this.mobileKeys.left = false;
+        this.mobileKeys.right = false;
+        this.mobileKeys.turbo = false;
+
+        let sprayTouch = null;
+
+        // Iterar por todos los dedos activos en pantalla
+        for (let i = 0; i < e.touches.length; i++) {
+          const t = e.touches[i];
+          const vx = (t.clientX - rect.left) * (this.width / rect.width);
+          const vy = (t.clientY - rect.top) * (this.height / rect.height);
+
+          let hitButton = false;
+
+          if (this.isMobile) {
+            const bL = this.mobileButtons.left;
+            if (vx >= bL.x && vx <= bL.x + bL.w && vy >= bL.y && vy <= bL.y + bL.h) {
+              this.mobileKeys.left = true;
+              hitButton = true;
+            }
+
+            const bR = this.mobileButtons.right;
+            if (vx >= bR.x && vx <= bR.x + bR.w && vy >= bR.y && vy <= bR.y + bR.h) {
+              this.mobileKeys.right = true;
+              hitButton = true;
+            }
+
+            const bT = this.mobileButtons.turbo;
+            if (vx >= bT.x && vx <= bT.x + bT.w && vy >= bT.y && vy <= bT.y + bT.h) {
+              if (!this.mobileKeys.turbo) {
+                this.sndTurbo.currentTime = 0;
+                this.playSound(this.sndTurbo);
+              }
+              this.mobileKeys.turbo = true;
+              hitButton = true;
+            }
+          }
+
+          // Si el toque no es sobre ningún botón, es para apuntar y tirar agua
+          if (!hitButton) {
+            sprayTouch = { x: vx, y: vy };
+          }
+        }
+
+        if (sprayTouch) {
+          this.aim.x = sprayTouch.x;
+          this.aim.y = sprayTouch.y;
+          this.isSpraying = true;
+        } else {
+          this.isSpraying = false;
+        }
+      }
+    };
+
+    this.canvas.addEventListener("touchstart", (e) => { processTouch(e); e.preventDefault(); }, { passive: false });
+    this.canvas.addEventListener("touchmove", (e) => { processTouch(e); e.preventDefault(); }, { passive: false });
+    this.canvas.addEventListener("touchend", (e) => { processTouch(e); e.preventDefault(); }, { passive: false });
+    this.canvas.addEventListener("touchcancel", (e) => { processTouch(e); e.preventDefault(); }, { passive: false });
   }
 
   handlePauseMenuClick() {
@@ -529,10 +599,11 @@ export default class Game {
     const dtFactor = dt * 60;
     this.gameTime += dt * 1000;
 
-    this.isTurbo = !!this.keys["Control"];
+    // Estado Turbo (Teclado o Botón táctil)
+    this.isTurbo = !!this.keys["Control"] || this.mobileKeys.turbo;
     const turboMultiplier = this.isTurbo ? 3.0 : 1.0; 
     
-    const sprayFactor = this.isSpraying ? 0.60 : 1.0; 
+    const sprayFactor = this.isSpraying ? 0.85 : 1.0; 
     this.scrollSpeed = this.baseScrollSpeed * turboMultiplier * sprayFactor;
 
     if (this.sndMusica.paused) this.playSound(this.sndMusica);
@@ -558,10 +629,11 @@ export default class Game {
 
     this.roadOffsetX += this.scrollSpeed * dtFactor;
 
-    if (this.keys["ArrowLeft"] || this.keys["a"] || this.keys["A"]) {
+    // Movimiento del camión (Teclado o Botones táctiles)
+    if (this.keys["ArrowLeft"] || this.keys["a"] || this.keys["A"] || this.mobileKeys.left) {
       this.truck.x -= this.truck.speed * dtFactor;
     }
-    if (this.keys["ArrowRight"] || this.keys["d"] || this.keys["D"]) {
+    if (this.keys["ArrowRight"] || this.keys["d"] || this.keys["D"] || this.mobileKeys.right) {
       this.truck.x += this.truck.speed * dtFactor;
     }
 
@@ -639,25 +711,24 @@ export default class Game {
       this.spawnNextBuilding();
     }
 
+    // Mantener todos los edificios completados en la carretera
     if (this.buildings.length > 0 && this.buildings[0].x + this.buildings[0].width < -150) {
       const oldBuilding = this.buildings.shift();
 
-      if (!oldBuilding.extinguished) {
-        const gap = 150 + Math.random() * 100;
-        const newX = Math.max(this.width + 100, this.lastBuildingX) + gap;
-        const dx = newX - oldBuilding.x;
+      const gap = 150 + Math.random() * 100;
+      const newX = Math.max(this.width + 100, this.lastBuildingX) + gap;
+      const dx = newX - oldBuilding.x;
 
-        oldBuilding.x = newX;
+      oldBuilding.x = newX;
 
-        this.fires.forEach(f => {
-          if (f.buildingId === oldBuilding.id) {
-            f.x += dx;
-          }
-        });
+      this.fires.forEach(f => {
+        if (f.buildingId === oldBuilding.id) {
+          f.x += dx;
+        }
+      });
 
-        this.buildings.push(oldBuilding);
-        this.lastBuildingX = newX + oldBuilding.width;
-      }
+      this.buildings.push(oldBuilding);
+      this.lastBuildingX = newX + oldBuilding.width;
     }
 
     const truckBob = Math.sin(this.gameTime * 0.0025) * 0.7;
@@ -1132,7 +1203,12 @@ export default class Game {
 
     this.ctx.restore();
 
-    // 15. HUD FIJO
+    // 15. DIBUJAR BOTONES MÓVILES TÁCTILES
+    if (this.isMobile && this.state === "PLAYING" && !this.isPaused) {
+      this.drawMobileControls();
+    }
+
+    // 16. HUD FIJO
     this.drawHUD();
 
     if (this.state === "WIN_BANNER") {
@@ -1142,6 +1218,48 @@ export default class Game {
     if (this.isPaused) {
       this.drawPauseMenu();
     }
+  }
+
+  // --- RENDERING DE LOS BOTONES VIRTUALES EN MÓVIL ---
+  drawMobileControls() {
+    this.ctx.save();
+
+    const btns = [
+      { key: "left", ...this.mobileButtons.left, label: "◀", color: "#2980b9" },
+      { key: "right", ...this.mobileButtons.right, label: "▶", color: "#2980b9" },
+      { key: "turbo", ...this.mobileButtons.turbo, label: "⚡ TURBO", color: "#e67e22" }
+    ];
+
+    btns.forEach(b => {
+      const isPressed = this.mobileKeys[b.key];
+
+      this.ctx.save();
+      this.ctx.fillStyle = isPressed ? "#f1c40f" : b.color;
+      this.ctx.globalAlpha = isPressed ? 0.95 : 0.65;
+
+      this.ctx.beginPath();
+      if (this.ctx.roundRect) {
+        this.ctx.roundRect(b.x, b.y, b.w, b.h, 16);
+      } else {
+        this.ctx.rect(b.x, b.y, b.w, b.h);
+      }
+      this.ctx.fill();
+
+      this.ctx.strokeStyle = "#ffffff";
+      this.ctx.lineWidth = 3;
+      this.ctx.stroke();
+
+      this.ctx.globalAlpha = 1.0;
+      this.ctx.fillStyle = isPressed ? "#000000" : "#ffffff";
+      this.ctx.font = "bold 22px Arial";
+      this.ctx.textAlign = "center";
+      this.ctx.textBaseline = "middle";
+      this.ctx.fillText(b.label, b.x + b.w / 2, b.y + b.h / 2);
+
+      this.ctx.restore();
+    });
+
+    this.ctx.restore();
   }
 
   drawEmbers() {
