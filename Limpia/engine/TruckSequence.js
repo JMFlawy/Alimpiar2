@@ -44,7 +44,7 @@ export default class TruckSequence {
     if (!this.game.truckSequenceStarted) return;
 
     // Velocidad reducida a 1.2 adaptada mediante Delta Time
-    const baseSpeed = 1.2;
+    const baseSpeed = 1.6;
     const speed = baseSpeed * dtFactor;
 
     if (!this.game.truckVideoPlaying && Math.random() < 0.3 * dtFactor) {
