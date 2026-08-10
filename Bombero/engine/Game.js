@@ -44,7 +44,7 @@ export default class Game {
     };
 
     // --- VELOCIDADES ESTABLES ---
-    this.baseScrollSpeed = 1.8;
+    this.baseScrollSpeed = 1.2;
     this.scrollSpeed = this.baseScrollSpeed;
     this.roadOffsetX = 0;
 
