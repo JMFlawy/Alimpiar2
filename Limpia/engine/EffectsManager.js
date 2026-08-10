@@ -53,8 +53,8 @@ export default class EffectsManager {
       targetX,
       targetY,
       progress: 0,
-      speed: 0.022, // Tiro pausado y controlado
-      arcHeight: 60,  // Altura limpia del arco
+      speed: 0.082, // Tiro pausado y controlado
+      arcHeight: 40,  // Altura limpia del arco
       onComplete
     };
   }
