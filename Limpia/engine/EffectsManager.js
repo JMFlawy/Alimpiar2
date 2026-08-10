@@ -28,10 +28,10 @@ export default class EffectsManager {
     return clouds;
   }
 
-  update() {
+  update(dtFactor = 1) {
     if (this.game.scene === "outside") {
       this.clouds.forEach(c => {
-        c.x -= c.speed;
+        c.x -= c.speed * dtFactor;
         if (c.x < -200) {
           c.x = this.game.worldWidth + 200;
           c.y = 20 + Math.random() * 110;
@@ -39,12 +39,12 @@ export default class EffectsManager {
       });
     }
 
-    this.updateSmoke();
-    this.updateTransition();
-    this.updateThrow();
+    this.updateSmoke(dtFactor);
+    this.updateTransition(dtFactor);
+    this.updateThrow(dtFactor);
   }
 
-  // --- PUNTO 3: Trayectoria en Arco al Reciclar ---
+  // --- Trayectoria en Arco al Reciclar ---
   throwTrash(item, startX, startY, targetX, targetY, onComplete) {
     this.activeThrow = {
       item,
@@ -53,16 +53,16 @@ export default class EffectsManager {
       targetX,
       targetY,
       progress: 0,
-      speed: 0.05,
-      arcHeight: 50,
+      speed: 0.022, // Tiro pausado y controlado
+      arcHeight: 60,  // Altura limpia del arco
       onComplete
     };
   }
 
-  updateThrow() {
+  updateThrow(dtFactor = 1) {
     if (!this.activeThrow) return;
 
-    this.activeThrow.progress += this.activeThrow.speed;
+    this.activeThrow.progress += this.activeThrow.speed * dtFactor;
     if (this.activeThrow.progress >= 1) {
       const callback = this.activeThrow.onComplete;
       this.activeThrow = null;
@@ -104,13 +104,13 @@ export default class EffectsManager {
     });
   }
 
-  updateSmoke() {
+  updateSmoke(dtFactor = 1) {
     for (let i = this.smokeParticles.length - 1; i >= 0; i--) {
       let s = this.smokeParticles[i];
-      s.x += s.vx;
-      s.y += s.vy;
-      s.radius += 0.18;
-      s.alpha -= 0.012;
+      s.x += s.vx * dtFactor;
+      s.y += s.vy * dtFactor;
+      s.radius += 0.18 * dtFactor;
+      s.alpha -= 0.012 * dtFactor;
       if (s.alpha <= 0) this.smokeParticles.splice(i, 1);
     }
   }
@@ -152,11 +152,11 @@ export default class EffectsManager {
     this.sceneTransition.targetY = targetY;
   }
 
-  updateTransition() {
+  updateTransition(dtFactor = 1) {
     if (!this.sceneTransition.active) return;
 
     if (this.sceneTransition.mode === "out") {
-      this.sceneTransition.alpha += 0.08;
+      this.sceneTransition.alpha += 0.08 * dtFactor;
       if (this.sceneTransition.alpha >= 1) {
         this.sceneTransition.alpha = 1;
         this.game.scene = this.sceneTransition.targetScene;
@@ -169,7 +169,7 @@ export default class EffectsManager {
         this.sceneTransition.mode = "in";
       }
     } else if (this.sceneTransition.mode === "in") {
-      this.sceneTransition.alpha -= 0.08;
+      this.sceneTransition.alpha -= 0.08 * dtFactor;
       if (this.sceneTransition.alpha <= 0) {
         this.sceneTransition.alpha = 0;
         this.sceneTransition.active = false;
@@ -187,7 +187,7 @@ export default class EffectsManager {
     }
   }
 
-  // --- PUNTO 4: Iluminación de Ambiente ---
+  // --- ILUMINACIÓN DE AMBIENTE ---
   drawAmbientLighting(ctx, scene, width, height) {
     ctx.save();
     if (scene === "inside") {
