@@ -135,7 +135,7 @@ export default class Game {
     this.birds = [];
     this.clouds = [];
 
-    this.lastBuildingX = this.width * 0.5;
+    this.lastBuildingX = this.width * 0.65;
     
     this.initClouds();
     this.initBirds();
@@ -213,8 +213,14 @@ export default class Game {
     };
   }
 
+  // --- GENERACIÓN DE LOS 9 EDIFICIOS DE LA FASE ---
   initCity() {
-    for (let i = 0; i < 3; i++) {
+    this.buildings = [];
+    this.fires = [];
+    this.spawnedCount = 0;
+    this.lastBuildingX = this.width * 0.65;
+
+    for (let i = 0; i < this.totalBuildings; i++) {
       this.spawnNextBuilding();
     }
   }
@@ -238,9 +244,9 @@ export default class Game {
 
     let x;
     if (templateIdx === 0) {
-      x = this.width * 0.75;
+      x = this.lastBuildingX;
     } else {
-      x = Math.max(this.width + 100, this.lastBuildingX + gap);
+      x = this.lastBuildingX + gap;
     }
 
     const building = {
@@ -261,6 +267,7 @@ export default class Game {
 
     const windowStepY = 55;
     const windowStepX = 42;
+    let fireCount = 0;
 
     for (let wy = building.y + 30; wy < building.y + building.height - 40; wy += windowStepY) {
       for (let wx = building.x + 15; wx < building.x + building.width - 30; wx += windowStepX) {
@@ -277,8 +284,23 @@ export default class Game {
             flickerPhase: Math.random() * Math.PI * 2,
             floatOffset: Math.random() * 100
           });
+          fireCount++;
         }
       }
+    }
+
+    // Asegurar que todo edificio tenga al menos un fuego para poder ser apagado
+    if (fireCount === 0) {
+      this.fires.push({
+        buildingId: building.id,
+        x: building.x + building.width / 2,
+        y: building.y + building.height / 2,
+        size: 28,
+        variant: 0,
+        flickerSpeed: 0.01,
+        flickerPhase: 0,
+        floatOffset: 0
+      });
     }
   }
 
@@ -381,7 +403,6 @@ export default class Game {
       }
     };
 
-    // --- EVENTOS DE TECLADO ---
     window.addEventListener("keydown", (e) => {
       if (this.state === "ENDED_BLACK") {
         window.location.reload();
@@ -437,7 +458,6 @@ export default class Game {
       if (e.key) this.keys[e.key.toLowerCase()] = false;
     });
 
-    // --- EVENTOS DE RATÓN ---
     this.canvas.addEventListener("mousemove", updateAim);
 
     this.canvas.addEventListener("mousedown", (e) => {
@@ -461,7 +481,6 @@ export default class Game {
 
     window.addEventListener("mouseup", () => this.isSpraying = false);
 
-    // --- MANEJO AVANZADO DE MULTITÁCTIL PARA MÓVILES ---
     const processTouch = (e) => {
       if (this.state === "ENDED_BLACK") {
         window.location.reload();
@@ -487,14 +506,12 @@ export default class Game {
 
         const rect = this.canvas.getBoundingClientRect();
 
-        // Reiniciar estado de botones virtuales
         this.mobileKeys.left = false;
         this.mobileKeys.right = false;
         this.mobileKeys.turbo = false;
 
         let sprayTouch = null;
 
-        // Iterar por todos los dedos activos en pantalla
         for (let i = 0; i < e.touches.length; i++) {
           const t = e.touches[i];
           const vx = (t.clientX - rect.left) * (this.width / rect.width);
@@ -526,7 +543,6 @@ export default class Game {
             }
           }
 
-          // Si el toque no es sobre ningún botón, es para apuntar y tirar agua
           if (!hitButton) {
             sprayTouch = { x: vx, y: vy };
           }
@@ -599,7 +615,6 @@ export default class Game {
     const dtFactor = dt * 60;
     this.gameTime += dt * 1000;
 
-    // Estado Turbo (Teclado o Botón táctil)
     this.isTurbo = !!this.keys["Control"] || this.mobileKeys.turbo;
     const turboMultiplier = this.isTurbo ? 3.0 : 1.0; 
     
@@ -629,7 +644,6 @@ export default class Game {
 
     this.roadOffsetX += this.scrollSpeed * dtFactor;
 
-    // Movimiento del camión (Teclado o Botones táctiles)
     if (this.keys["ArrowLeft"] || this.keys["a"] || this.keys["A"] || this.mobileKeys.left) {
       this.truck.x -= this.truck.speed * dtFactor;
     }
@@ -668,7 +682,6 @@ export default class Game {
     this.fires.forEach(f => f.x -= this.scrollSpeed * dtFactor);
     this.extinguishEffects.forEach(e => e.x -= this.scrollSpeed * dtFactor);
     this.cleanSparkles.forEach(s => s.x -= this.scrollSpeed * dtFactor);
-    this.lastBuildingX -= this.scrollSpeed * dtFactor;
 
     // --- ASCUAS ---
     if (this.fires.length > 0 && Math.random() < 0.35 * dtFactor) {
@@ -707,15 +720,11 @@ export default class Game {
       if (p.life <= 0) this.puddles.splice(i, 1);
     }
 
-    if (this.spawnedCount < this.totalBuildings && this.lastBuildingX < this.width + 300) {
-      this.spawnNextBuilding();
-    }
-
-    // Mantener todos los edificios completados en la carretera
+    // --- RECICLAJE FLUIDO DE LOS 9 EDIFICIOS ---
     if (this.buildings.length > 0 && this.buildings[0].x + this.buildings[0].width < -150) {
       const oldBuilding = this.buildings.shift();
 
-      const gap = 150 + Math.random() * 100;
+      const gap = 160 + Math.random() * 100;
       const newX = Math.max(this.width + 100, this.lastBuildingX) + gap;
       const dx = newX - oldBuilding.x;
 
@@ -802,7 +811,7 @@ export default class Game {
       if (l.x + l.length < 0) this.speedLines.splice(i, 1);
     }
 
-    // --- BOLAS DE AGUA ---
+    // --- BOLAS DE AGUA Y DETECCIÓN DE APAGADO ---
     for (let i = this.waterParticles.length - 1; i >= 0; i--) {
       const p = this.waterParticles[i];
       
@@ -1220,7 +1229,6 @@ export default class Game {
     }
   }
 
-  // --- RENDERING DE LOS BOTONES VIRTUALES EN MÓVIL ---
   drawMobileControls() {
     this.ctx.save();
 
