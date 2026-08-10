@@ -3,19 +3,20 @@ export default class Game {
     this.canvas = canvas;
     this.ctx = ctx;
 
-    // Detectar dispositivo móvil o táctil
-    this.isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || ('ontouchstart' in window);
+    // --- RESOLUCIÓN VIRTUAL FIJA (Garantiza física y posiciones idénticas en cualquier pantalla) ---
+    this.width = 1280;
+    this.height = 720;
 
-    // Ajustar resolución y proporciones de pantalla
+    // Ajustar tamaño del Canvas en pantalla
     this.fitCanvasToScreen();
 
-    // Suelo de la carretera en el 82% de la altura de pantalla
+    // Suelo fijo en el 82% de la resolución virtual
     this.groundY = Math.floor(this.height * 0.82);
 
-    // ESTADOS DEL JUEGO: "COVER", "INTRO", "PLAYING", "WIN_BANNER", "FINAL_VIDEO", "ENDED_BLACK"
+    // ESTADOS DEL JUEGO
     this.state = "COVER";
 
-    // Estado del juego (9 Edificios totales)
+    // Estado del juego
     this.score = 0;
     this.totalBuildings = 9;
     this.remainingBuildings = 9;
@@ -33,25 +34,21 @@ export default class Game {
     // Registro de teclas
     this.keys = {};
 
-    // --- CONFIGURACIÓN PROPORCIONAL DE VELOCIDADES ---
-    // Velocidades ajustadas proporcionalmente al ancho de la pantalla para una excelente agilidad
-    this.baseScrollSpeed = this.width * 0.0032; 
+    // --- VELOCIDADES ESTABLES ---
+    this.baseScrollSpeed = 1.8;
     this.scrollSpeed = this.baseScrollSpeed;
     this.roadOffsetX = 0;
 
-    // --- CONFIGURACIÓN DEL CAMIÓN (PROPORCIONAL A LA PANTALLA) ---
-    const truckHeight = Math.floor(this.height * 0.28);
-    const truckWidth = Math.floor(truckHeight * (260 / 245));
-
+    // --- CONFIGURACIÓN ESTABLE DEL CAMIÓN ---
     this.truck = {
-      x: this.width * 0.08,
-      y: this.groundY - truckHeight + (5 * this.getDPR()),
-      width: truckWidth,
-      height: truckHeight,
-      speed: this.width * 0.0085 // Camión rápido y reactivo al teclado/controles
+      x: 90,
+      y: this.groundY - 145,
+      width: 250,
+      height: 235,
+      speed: 3.8
     };
 
-    // --- CARGA DE ASSETS EN IMÁGENES ---
+    // --- CARGA DE IMÁGENES ---
     this.coverImage = new Image();
     this.coverImage.src = "assets/portada.png";
 
@@ -90,11 +87,11 @@ export default class Game {
     this.birdsImage = new Image();
     this.birdsImage.src = "assets/pajaros.png";
 
-    // --- CARGA DE VÍDEOS ---
+    // Vídeos
     this.introVideo = null;
     this.finalVideo = null;
 
-    // --- CARGA DE SONIDOS Y VOLÚMENES ---
+    // Sonidos
     this.sndMarcha = new Audio("sounds/marcha.mp3");
     this.sndMarcha.loop = true;
 
@@ -113,7 +110,7 @@ export default class Game {
     this.sndTerminado = new Audio("sounds/terminado.mp3");
     this.sndClear = new Audio("sounds/clear.mp3");
 
-    // Colecciones de efectos
+    // Colecciones
     this.buildings = [];
     this.fires = [];
     this.embers = [];          
@@ -137,52 +134,38 @@ export default class Game {
     this.bindEvents();
   }
 
-  getDPR() {
-    return Math.min(window.devicePixelRatio || 1, this.isMobile ? 1.5 : 2.0);
-  }
-
+  // --- ESCALADO INTELIGENTE MANTENIENDO PROPORCIÓN ---
   fitCanvasToScreen() {
-    const dpr = this.getDPR();
-    const w = window.innerWidth;
-    const h = window.innerHeight;
+    this.canvas.width = this.width;
+    this.canvas.height = this.height;
 
-    this.canvas.width = Math.floor(w * dpr);
-    this.canvas.height = Math.floor(h * dpr);
+    const screenW = window.innerWidth;
+    const screenH = window.innerHeight;
+    
+    // Escala manteniendo 16:9
+    const scale = Math.min(screenW / this.width, screenH / this.height);
 
-    this.canvas.style.width = `${w}px`;
-    this.canvas.style.height = `${h}px`;
+    const cssW = Math.floor(this.width * scale);
+    const cssH = Math.floor(this.height * scale);
 
-    this.width = this.canvas.width;
-    this.height = this.canvas.height;
+    this.canvas.style.width = `${cssW}px`;
+    this.canvas.style.height = `${cssH}px`;
+    this.canvas.style.position = "absolute";
+    this.canvas.style.left = `${(screenW - cssW) / 2}px`;
+    this.canvas.style.top = `${(screenH - cssH) / 2}px`;
   }
 
   resize() {
     this.fitCanvasToScreen();
-    const dpr = this.getDPR();
-
-    this.groundY = Math.floor(this.height * 0.82);
-    
-    const truckHeight = Math.floor(this.height * 0.28);
-    const truckWidth = Math.floor(truckHeight * (260 / 245));
-
-    this.truck.height = truckHeight;
-    this.truck.width = truckWidth;
-    this.truck.y = this.groundY - truckHeight + (5 * dpr);
-    this.truck.speed = this.width * 0.0085;
-    this.baseScrollSpeed = this.width * 0.0032;
-
-    const maxX = this.width - this.truck.width - (10 * dpr);
-    this.truck.x = Math.max(10 * dpr, Math.min(this.truck.x, maxX));
   }
 
   initClouds() {
-    const dpr = this.getDPR();
     this.clouds = [];
     for (let i = 0; i < 5; i++) {
       this.clouds.push({
         x: Math.random() * this.width,
-        y: (20 + Math.random() * 70) * dpr,
-        scale: (0.7 + Math.random() * 0.5) * dpr,
+        y: 20 + Math.random() * 70,
+        scale: 0.7 + Math.random() * 0.5,
         parallax: 0.25 + Math.random() * 0.2
       });
     }
@@ -196,28 +179,27 @@ export default class Game {
   }
 
   createBird(flockType, initialSpawn = false) {
-    const dpr = this.getDPR();
     const direction = Math.random() < 0.7 ? 1 : -1; 
-    const baseSpeed = (0.5 + Math.random() * 0.4) * dpr;
+    const baseSpeed = 0.4 + Math.random() * 0.3;
     
     let x;
     if (initialSpawn) {
-      x = Math.random() < 0.5 ? Math.random() * this.width : (direction === 1 ? -300 * dpr : this.width + 300 * dpr);
+      x = Math.random() < 0.5 ? Math.random() * this.width : (direction === 1 ? -300 : this.width + 300);
     } else {
-      const offscreenDistance = (400 + Math.random() * 700) * dpr;
+      const offscreenDistance = 400 + Math.random() * 700;
       x = direction === 1 ? -offscreenDistance : this.width + offscreenDistance;
     }
 
     return {
       flockType: flockType !== undefined ? flockType : Math.floor(Math.random() * 4),
       x: x,
-      y: (15 + Math.random() * 80) * dpr,
+      y: 15 + Math.random() * 80,
       direction: direction,
       flightSpeed: baseSpeed,
-      scale: (0.12 + Math.random() * 0.10) * dpr,
+      scale: 0.12 + Math.random() * 0.10,
       wobblePhase: Math.random() * Math.PI * 2,
       wobbleSpeed: 0.015 + Math.random() * 0.01,
-      wobbleAmp: (3 + Math.random() * 4) * dpr,
+      wobbleAmp: 3 + Math.random() * 4,
       flapPhase: Math.random() * Math.PI * 2,
       flapSpeed: 0.08 + Math.random() * 0.04
     };
@@ -232,29 +214,25 @@ export default class Game {
   spawnNextBuilding() {
     if (this.spawnedCount >= this.totalBuildings) return;
 
-    const dpr = this.getDPR();
     const templateIdx = this.spawnedCount;
-
     const imgIdx = Math.floor(Math.random() * this.buildingImages.length);
     const col = Math.floor(Math.random() * 4);
 
     this.spawnedCount++;
 
-    const buildingScale = 1.4; 
-    const sizeMultiplier = (1.0 + Math.random() * 0.2) * buildingScale; 
+    const sizeMultiplier = 1.0 + Math.random() * 0.2; 
+    const baseW = 120 + (templateIdx % 3) * 20;
+    const baseH = 220 + (templateIdx % 4) * 35;
 
-    const baseW = 115 + (templateIdx % 3) * 25;
-    const baseH = 190 + (templateIdx % 4) * 45;
-
-    const bWidth = baseW * sizeMultiplier * dpr; 
-    const bHeight = baseH * sizeMultiplier * dpr; 
-    const gap = (150 + Math.random() * 100) * dpr; 
+    const bWidth = baseW * sizeMultiplier; 
+    const bHeight = baseH * sizeMultiplier; 
+    const gap = 160 + Math.random() * 100; 
 
     let x;
     if (templateIdx === 0) {
       x = this.width * 0.75;
     } else {
-      x = Math.max(this.width + (100 * dpr), this.lastBuildingX + gap);
+      x = Math.max(this.width + 100, this.lastBuildingX + gap);
     }
 
     const building = {
@@ -273,18 +251,18 @@ export default class Game {
     this.buildings.push(building);
     this.lastBuildingX = x + bWidth;
 
-    const windowStepY = 55 * dpr;
-    const windowStepX = 42 * dpr;
+    const windowStepY = 55;
+    const windowStepX = 42;
 
-    for (let wy = building.y + (30 * dpr); wy < building.y + building.height - (40 * dpr); wy += windowStepY) {
-      for (let wx = building.x + (15 * dpr); wx < building.x + building.width - (30 * dpr); wx += windowStepX) {
+    for (let wy = building.y + 30; wy < building.y + building.height - 40; wy += windowStepY) {
+      for (let wx = building.x + 15; wx < building.x + building.width - 30; wx += windowStepX) {
         if (Math.random() < 0.55) {
-          const randomSize = (22 + Math.random() * 28) * dpr;
+          const randomSize = 24 + Math.random() * 26;
 
           this.fires.push({
             buildingId: building.id,
-            x: wx + (12 * dpr),
-            y: wy + (15 * dpr),
+            x: wx + 12,
+            y: wy + 15,
             size: randomSize,
             variant: Math.floor(Math.random() * 3), 
             flickerSpeed: 0.008 + Math.random() * 0.008,
@@ -376,14 +354,14 @@ export default class Game {
   bindEvents() {
     window.addEventListener("resize", () => this.resize());
 
+    // Traducción de coordenadas de pantalla a coordenadas del Canvas Virtual (1280x720)
     const updateAim = (e) => {
       const rect = this.canvas.getBoundingClientRect();
-      const dpr = this.getDPR();
       const clientX = e.clientX || (e.touches && e.touches[0].clientX) || 0;
       const clientY = e.clientY || (e.touches && e.touches[0].clientY) || 0;
 
-      this.aim.x = (clientX - rect.left) * dpr;
-      this.aim.y = (clientY - rect.top) * dpr;
+      this.aim.x = (clientX - rect.left) * (this.width / rect.width);
+      this.aim.y = (clientY - rect.top) * (this.height / rect.height);
     };
 
     const handleUserInteraction = () => {
@@ -501,17 +479,16 @@ export default class Game {
   }
 
   handlePauseMenuClick() {
-    const dpr = this.getDPR();
-    const panelW = Math.min(this.width * 0.85, 380 * dpr);
-    const panelH = Math.min(this.height * 0.65, 220 * dpr);
+    const panelW = 380;
+    const panelH = 220;
     const panelY = (this.height - panelH) / 2;
 
-    const btnW = panelW * 0.8;
-    const btnH = 45 * dpr;
+    const btnW = 280;
+    const btnH = 45;
     const btnX = (this.width - btnW) / 2;
 
-    const resumeY = panelY + (panelH * 0.35);
-    const menuY = panelY + (panelH * 0.65);
+    const resumeY = panelY + 80;
+    const menuY = panelY + 140;
 
     if (
       this.aim.x >= btnX && this.aim.x <= btnX + btnW &&
@@ -551,10 +528,9 @@ export default class Game {
 
     const dtFactor = dt * 60;
     this.gameTime += dt * 1000;
-    const dpr = this.getDPR();
 
     this.isTurbo = !!this.keys["Control"];
-    const turboMultiplier = this.isTurbo ? 3.2 : 1.0; 
+    const turboMultiplier = this.isTurbo ? 3.0 : 1.0; 
     
     const sprayFactor = this.isSpraying ? 0.85 : 1.0; 
     this.scrollSpeed = this.baseScrollSpeed * turboMultiplier * sprayFactor;
@@ -589,15 +565,15 @@ export default class Game {
       this.truck.x += this.truck.speed * dtFactor;
     }
 
-    const minX = 10 * dpr;
-    const maxX = this.width - this.truck.width - (10 * dpr);
+    const minX = 10;
+    const maxX = this.width - this.truck.width - 10;
     this.truck.x = Math.max(minX, Math.min(this.truck.x, maxX));
 
     this.clouds.forEach(c => {
       c.x -= this.scrollSpeed * c.parallax * dtFactor;
-      if (c.x < -150 * dpr) {
-        c.x = this.width + (50 * dpr);
-        c.y = (20 + Math.random() * 70) * dpr;
+      if (c.x < -150) {
+        c.x = this.width + 50;
+        c.y = 20 + Math.random() * 70;
       }
     });
 
@@ -606,7 +582,7 @@ export default class Game {
       b.wobblePhase += b.wobbleSpeed * dtFactor;
       b.flapPhase += b.flapSpeed * dtFactor;
 
-      const margin = 500 * dpr;
+      const margin = 500;
       if (b.x < -margin || b.x > this.width + margin) {
         this.birds[index] = this.createBird(index % 4, false);
       }
@@ -622,7 +598,7 @@ export default class Game {
     this.cleanSparkles.forEach(s => s.x -= this.scrollSpeed * dtFactor);
     this.lastBuildingX -= this.scrollSpeed * dtFactor;
 
-    // --- ASCUAS / CHISPAS FLOTANTES ---
+    // --- ASCUAS ---
     if (this.fires.length > 0 && Math.random() < 0.35 * dtFactor) {
       const visibleFires = this.fires.filter(f => f.x > 0 && f.x < this.width);
       if (visibleFires.length > 0) {
@@ -630,9 +606,9 @@ export default class Game {
         this.embers.push({
           x: randomFire.x + (Math.random() - 0.5) * randomFire.size,
           y: randomFire.y + (Math.random() - 0.5) * randomFire.size,
-          vx: (Math.random() - 0.5) * (0.8 * dpr),
-          vy: -(0.8 + Math.random() * 1.5) * dpr,
-          radius: (1.5 + Math.random() * 2.2) * dpr,
+          vx: (Math.random() - 0.5) * 0.8,
+          vy: -(0.8 + Math.random() * 1.5),
+          radius: 1.5 + Math.random() * 2.2,
           alpha: 0.95,
           life: 40 + Math.random() * 30,
           maxLife: 70,
@@ -659,16 +635,16 @@ export default class Game {
       if (p.life <= 0) this.puddles.splice(i, 1);
     }
 
-    if (this.spawnedCount < this.totalBuildings && this.lastBuildingX < this.width + (300 * dpr)) {
+    if (this.spawnedCount < this.totalBuildings && this.lastBuildingX < this.width + 300) {
       this.spawnNextBuilding();
     }
 
-    if (this.buildings.length > 0 && this.buildings[0].x + this.buildings[0].width < -150 * dpr) {
+    if (this.buildings.length > 0 && this.buildings[0].x + this.buildings[0].width < -150) {
       const oldBuilding = this.buildings.shift();
 
       if (!oldBuilding.extinguished) {
-        const gap = (150 + Math.random() * 100) * dpr;
-        const newX = Math.max(this.width + (100 * dpr), this.lastBuildingX) + gap;
+        const gap = 150 + Math.random() * 100;
+        const newX = Math.max(this.width + 100, this.lastBuildingX) + gap;
         const dx = newX - oldBuilding.x;
 
         oldBuilding.x = newX;
@@ -684,18 +660,18 @@ export default class Game {
       }
     }
 
-    const truckBob = Math.sin(this.gameTime * 0.0025) * (0.7 * dpr);
-    const exhaustX = this.truck.x + (15 * dpr);
-    const exhaustY = this.truck.y + truckBob + this.truck.height - (30 * dpr);
+    const truckBob = Math.sin(this.gameTime * 0.0025) * 0.7;
+    const exhaustX = this.truck.x + 15;
+    const exhaustY = this.truck.y + truckBob + this.truck.height - 30;
 
     const smokeRate = this.isTurbo ? 0.95 : 0.6;
     if (Math.random() < smokeRate * dtFactor) {
       this.exhaustSmoke.push({
         x: exhaustX,
         y: exhaustY,
-        vx: -this.scrollSpeed - ((0.4 + Math.random() * 0.8) * dpr),
-        vy: -(0.15 + Math.random() * 0.3) * dpr,
-        radius: (this.isTurbo ? 6 + Math.random() * 5 : 4 + Math.random() * 3) * dpr,
+        vx: -this.scrollSpeed - (0.4 + Math.random() * 0.8),
+        vy: -(0.15 + Math.random() * 0.3),
+        radius: this.isTurbo ? 6 + Math.random() * 5 : 4 + Math.random() * 3,
         alpha: this.isTurbo ? 0.7 : 0.5,
         life: 50 + Math.random() * 20,
         maxLife: 70
@@ -706,7 +682,7 @@ export default class Game {
       const s = this.exhaustSmoke[i];
       s.x += s.vx * dtFactor;
       s.y += s.vy * dtFactor;
-      s.radius += 0.22 * dpr * dtFactor;
+      s.radius += 0.22 * dtFactor;
       s.life -= dtFactor;
       s.alpha = (s.life / s.maxLife) * (this.isTurbo ? 0.7 : 0.5);
 
@@ -717,10 +693,10 @@ export default class Game {
       for (let i = 0; i < 3; i++) {
         this.turboFlames.push({
           x: exhaustX,
-          y: exhaustY + (Math.random() - 0.5) * (8 * dpr),
+          y: exhaustY + (Math.random() - 0.5) * 8,
           vx: -this.scrollSpeed * (1.2 + Math.random() * 0.8),
-          vy: (Math.random() - 0.5) * (1.5 * dpr),
-          radius: (5 + Math.random() * 6) * dpr,
+          vy: (Math.random() - 0.5) * 1.5,
+          radius: 5 + Math.random() * 6,
           color: Math.random() < 0.4 ? "#ff3300" : (Math.random() < 0.7 ? "#ff9900" : "#ffff33"),
           alpha: 1.0,
           life: 12 + Math.random() * 8,
@@ -730,10 +706,10 @@ export default class Game {
 
       if (Math.random() < 0.8 * dtFactor) {
         this.speedLines.push({
-          x: this.width + (50 * dpr),
+          x: this.width + 50,
           y: Math.random() * this.height,
-          length: (40 + Math.random() * 80) * dpr,
-          speed: (18 + Math.random() * 10) * dpr,
+          length: 40 + Math.random() * 80,
+          speed: 18 + Math.random() * 10,
           alpha: 0.3 + Math.random() * 0.4
         });
       }
@@ -761,16 +737,16 @@ export default class Game {
       
       p.x += p.vx * dtFactor;
       p.y += p.vy * dtFactor;
-      p.vy += (0.22 * dpr) * dtFactor; 
+      p.vy += 0.22 * dtFactor; 
       p.life -= dtFactor;
 
-      if (p.y >= this.groundY - (5 * dpr)) {
+      if (p.y >= this.groundY - 5) {
         if (Math.random() < 0.2) {
           this.puddles.push({
             x: p.x,
-            y: this.groundY + (6 + Math.random() * 22) * dpr,
-            rx: (12 + Math.random() * 14) * dpr,
-            ry: (3.5 + Math.random() * 3) * dpr,
+            y: this.groundY + 6 + Math.random() * 22,
+            rx: 12 + Math.random() * 14,
+            ry: 3.5 + Math.random() * 3,
             alpha: 0.65,
             life: 200 + Math.random() * 120,
             maxLife: 320
@@ -787,27 +763,27 @@ export default class Game {
         const dist = Math.hypot(p.x - f.x, p.y - f.y);
 
         if (dist < f.size + p.radius) {
-          f.size -= 0.65 * dpr * dtFactor;
+          f.size -= 0.65 * dtFactor;
           hitFire = true;
 
           this.waterImpacts.push({
             x: p.x,
             y: p.y,
-            radius: (4 + Math.random() * 3) * dpr,
-            maxRadius: (16 + Math.random() * 10) * dpr,
+            radius: 4 + Math.random() * 3,
+            maxRadius: 16 + Math.random() * 10,
             alpha: 0.85,
             life: 14,
             maxLife: 14
           });
 
-          if (f.size <= 5 * dpr) {
+          if (f.size <= 5) {
             for (let k = 0; k < 5; k++) {
               this.extinguishEffects.push({
-                x: f.x + (Math.random() - 0.5) * (15 * dpr),
-                y: f.y + (Math.random() - 0.5) * (15 * dpr),
-                vx: (Math.random() - 0.5) * (1.2 * dpr),
-                vy: -(0.5 + Math.random() * 1.2) * dpr,
-                radius: (6 + Math.random() * 8) * dpr,
+                x: f.x + (Math.random() - 0.5) * 15,
+                y: f.y + (Math.random() - 0.5) * 15,
+                vx: (Math.random() - 0.5) * 1.2,
+                vy: -(0.5 + Math.random() * 1.2),
+                radius: 6 + Math.random() * 8,
                 alpha: 0.8,
                 life: 35 + Math.random() * 20,
                 maxLife: 55,
@@ -834,9 +810,9 @@ export default class Game {
                 this.cleanSparkles.push({
                   x: parentBuilding.x + Math.random() * parentBuilding.width,
                   y: parentBuilding.y + Math.random() * parentBuilding.height,
-                  vx: (Math.random() - 0.5) * (1.5 * dpr),
-                  vy: -(0.8 + Math.random() * 1.5) * dpr,
-                  radius: (3 + Math.random() * 5) * dpr,
+                  vx: (Math.random() - 0.5) * 1.5,
+                  vy: -(0.8 + Math.random() * 1.5),
+                  radius: 3 + Math.random() * 5,
                   alpha: 1.0,
                   life: 40 + Math.random() * 25,
                   maxLife: 65
@@ -862,8 +838,8 @@ export default class Game {
               this.waterImpacts.push({
                 x: p.x,
                 y: p.y,
-                radius: (3 + Math.random() * 3) * dpr,
-                maxRadius: (12 + Math.random() * 8) * dpr,
+                radius: 3 + Math.random() * 3,
+                maxRadius: 12 + Math.random() * 8,
                 alpha: 0.75,
                 life: 12,
                 maxLife: 12
@@ -877,9 +853,9 @@ export default class Game {
           this.extinguishEffects.push({
             x: p.x,
             y: p.y,
-            vx: (Math.random() - 0.5) * (3.0 * dpr),
-            vy: -(Math.random() * 2.2 + 0.5) * dpr,
-            radius: (3 + Math.random() * 4) * dpr,
+            vx: (Math.random() - 0.5) * 3.0,
+            vy: -(Math.random() * 2.2 + 0.5),
+            radius: 3 + Math.random() * 4,
             alpha: 0.75,
             life: 12 + Math.random() * 8,
             maxLife: 20,
@@ -908,39 +884,39 @@ export default class Game {
       if (imp.life <= 0) this.waterImpacts.splice(i, 1);
     }
 
-    // GENERAR CHORRO
+    // CHORRO
     if (this.isSpraying) {
       const nozzleX = this.truck.x + this.truck.width * 0.98;
-      const nozzleY = this.truck.y + truckBob + (60 * dpr);
+      const nozzleY = this.truck.y + truckBob + 60;
 
       const rawDx = this.aim.x - nozzleX;
       const rawDy = this.aim.y - nozzleY;
       const rawDist = Math.hypot(rawDx, rawDy);
 
-      if (rawDist > 5 * dpr) { 
-        const maxDist = 450 * dpr; 
+      if (rawDist > 5) { 
+        const maxDist = 450; 
         const effectiveDist = Math.min(rawDist, maxDist);
         const angleToAim = Math.atan2(rawDy, rawDx);
 
-        const muzzleSpeed = 18 * dpr; 
+        const muzzleSpeed = 16; 
         const travelFrames = Math.max(3, Math.floor(effectiveDist / muzzleSpeed));
 
         const vxBase = Math.cos(angleToAim) * muzzleSpeed;
-        const g = 0.22 * dpr;
+        const g = 0.22;
         const vyBase = Math.sin(angleToAim) * muzzleSpeed - (0.5 * g * travelFrames);
 
         const streamDensity = 10;
         for (let i = 0; i < streamDensity; i++) {
           const step = i / streamDensity; 
-          const spreadX = (Math.random() - 0.5) * (1.2 * dpr);
-          const spreadY = (Math.random() - 0.5) * (1.5 * dpr); 
+          const spreadX = (Math.random() - 0.5) * 1.2;
+          const spreadY = (Math.random() - 0.5) * 1.5; 
 
           this.waterParticles.push({
             x: nozzleX + vxBase * step, 
             y: nozzleY + vyBase * step, 
             vx: vxBase + spreadX,
             vy: vyBase + spreadY,
-            radius: (8.5 + Math.random() * 4) * dpr, 
+            radius: 8.5 + Math.random() * 4, 
             life: travelFrames,
             maxLife: travelFrames
           });
@@ -952,7 +928,7 @@ export default class Game {
       const e = this.extinguishEffects[i];
       e.x += e.vx * dtFactor;
       e.y += e.vy * dtFactor;
-      e.radius += 0.2 * dpr * dtFactor;
+      e.radius += 0.2 * dtFactor;
       e.life -= dtFactor;
       e.alpha = (e.life / e.maxLife) * 0.75;
 
@@ -996,11 +972,9 @@ export default class Game {
       return;
     }
 
-    const dpr = this.getDPR();
-
     this.ctx.save();
     if (this.isTurbo && !this.isPaused && this.state === "PLAYING") {
-      const shakeAmount = 1.0 * dpr;
+      const shakeAmount = 1.0;
       const shakeX = (Math.random() - 0.5) * shakeAmount;
       const shakeY = (Math.random() - 0.5) * shakeAmount;
       this.ctx.translate(shakeX, shakeY);
@@ -1025,7 +999,7 @@ export default class Game {
     if (this.isTurbo) {
       this.ctx.save();
       this.ctx.strokeStyle = "rgba(255, 255, 255, 0.6)";
-      this.ctx.lineWidth = 2 * dpr;
+      this.ctx.lineWidth = 2;
       this.speedLines.forEach(l => {
         this.ctx.beginPath();
         this.ctx.moveTo(l.x, l.y);
@@ -1037,19 +1011,17 @@ export default class Game {
 
     // 4. EDIFICIOS
     this.buildings.forEach(b => {
-      if (b.x + b.width > -50 * dpr && b.x < this.width + (50 * dpr)) {
+      if (b.x + b.width > -50 && b.x < this.width + 50) {
         this.ctx.save();
 
-        if (!this.isMobile) {
-          if (b.extinguished) {
-            const pulse = Math.sin(this.gameTime * 0.005) * 4 * dpr;
-            this.ctx.shadowColor = "rgba(40, 255, 120, 0.95)";
-            this.ctx.shadowBlur = (12 + pulse + b.cleanPulse * 10) * dpr;
-          } else {
-            const pulse = Math.sin(this.gameTime * 0.008) * 5 * dpr;
-            this.ctx.shadowColor = "rgba(255, 50, 50, 0.95)";
-            this.ctx.shadowBlur = (12 + pulse) * dpr;
-          }
+        if (b.extinguished) {
+          const pulse = Math.sin(this.gameTime * 0.005) * 4;
+          this.ctx.shadowColor = "rgba(40, 255, 120, 0.95)";
+          this.ctx.shadowBlur = 12 + pulse + b.cleanPulse * 10;
+        } else {
+          const pulse = Math.sin(this.gameTime * 0.008) * 5;
+          this.ctx.shadowColor = "rgba(255, 50, 50, 0.95)";
+          this.ctx.shadowBlur = 12 + pulse;
         }
 
         const bImg = this.buildingImages[b.imgIdx];
@@ -1074,16 +1046,14 @@ export default class Game {
 
     // 5. FUEGOS VIVOS
     this.fires.forEach(f => {
-      if (f.x > -40 * dpr && f.x < this.width + (40 * dpr)) {
+      if (f.x > -40 && f.x < this.width + 40) {
         this.ctx.save();
 
         const pulse = Math.sin(this.gameTime * f.flickerSpeed + f.flickerPhase);
-        const currentSize = f.size + (pulse * 2.5 * dpr);
+        const currentSize = f.size + (pulse * 2.5);
 
-        if (!this.isMobile) {
-          this.ctx.shadowColor = `rgba(255, ${Math.floor(100 + pulse * 40)}, 0, ${0.85 + pulse * 0.15})`;
-          this.ctx.shadowBlur = (8 + pulse * 4) * dpr;
-        }
+        this.ctx.shadowColor = `rgba(255, ${Math.floor(100 + pulse * 40)}, 0, ${0.85 + pulse * 0.15})`;
+        this.ctx.shadowBlur = 8 + pulse * 4;
 
         if (this.fireImage.complete && this.fireImage.naturalWidth > 0) {
           const frameW = this.fireImage.naturalWidth / 3;
@@ -1153,11 +1123,11 @@ export default class Game {
     // 13. GOTAS DE AGUA
     this.drawWaterDroplets();
 
-    // 14. PUNTERO DE APUNTADO
+    // 14. PUNTERO
     this.ctx.strokeStyle = "rgba(255, 255, 255, 0.85)";
-    this.ctx.lineWidth = 3 * dpr;
+    this.ctx.lineWidth = 3;
     this.ctx.beginPath();
-    this.ctx.arc(this.aim.x, this.aim.y, 18 * dpr, 0, Math.PI * 2);
+    this.ctx.arc(this.aim.x, this.aim.y, 18, 0, Math.PI * 2);
     this.ctx.stroke();
 
     this.ctx.restore();
@@ -1187,11 +1157,9 @@ export default class Game {
   }
 
   drawPuddles() {
-    const dpr = this.getDPR();
     this.ctx.save();
-
     this.puddles.forEach(p => {
-      if (p.x > -60 * dpr && p.x < this.width + (60 * dpr)) {
+      if (p.x > -60 && p.x < this.width + 60) {
         this.ctx.fillStyle = `rgba(35, 90, 120, ${p.alpha * 0.75})`;
         this.ctx.beginPath();
         this.ctx.ellipse(p.x, p.y, p.rx, p.ry, 0, 0, Math.PI * 2);
@@ -1207,12 +1175,11 @@ export default class Game {
   }
 
   drawWaterImpacts() {
-    const dpr = this.getDPR();
     this.ctx.save();
     this.waterImpacts.forEach(imp => {
       this.ctx.strokeStyle = `rgba(180, 240, 255, ${imp.alpha})`;
       this.ctx.fillStyle = `rgba(220, 250, 255, ${imp.alpha * 0.4})`;
-      this.ctx.lineWidth = 2 * dpr;
+      this.ctx.lineWidth = 2;
 
       this.ctx.beginPath();
       this.ctx.arc(imp.x, imp.y, imp.radius, 0, Math.PI * 2);
@@ -1421,8 +1388,8 @@ export default class Game {
     this.ctx.fillStyle = "rgba(255, 255, 255, 0.75)";
     this.ctx.beginPath();
     this.ctx.arc(x, y, 22 * scale, 0, Math.PI * 2);
-    this.ctx.arc(x + (16 * scale), y - (10 * scale), 18 * scale, 0, Math.PI * 2);
-    this.ctx.arc(x + (32 * scale), y, 20 * scale, 0, Math.PI * 2);
+    this.ctx.arc(x + 16 * scale, y - 10 * scale, 18 * scale, 0, Math.PI * 2);
+    this.ctx.arc(x + 32 * scale, y, 20 * scale, 0, Math.PI * 2);
     this.ctx.fill();
     this.ctx.restore();
   }
@@ -1467,13 +1434,11 @@ export default class Game {
   }
 
   drawHUD() {
-    const dpr = this.getDPR();
-
     this.ctx.save();
 
-    const imgX = 20 * dpr;
-    const imgY = 20 * dpr;
-    const targetH = Math.floor(this.height * 0.11);
+    const imgX = 20;
+    const imgY = 20;
+    const targetH = 80;
 
     if (this.faltaImage.complete && this.faltaImage.naturalWidth > 0) {
       const aspect = this.faltaImage.naturalWidth / this.faltaImage.naturalHeight;
@@ -1482,23 +1447,23 @@ export default class Game {
       this.ctx.drawImage(this.faltaImage, imgX, imgY, targetW, targetH);
 
       const textStr = `${this.remainingBuildings} / ${this.totalBuildings}`;
-      const fontSize = Math.floor(targetH * 0.32);
+      const fontSize = 24;
       this.ctx.font = `bold ${fontSize}px Arial`;
 
       const textWidth = this.ctx.measureText(textStr).width;
-      const paddingX = 14 * dpr;
-      const paddingY = 8 * dpr;
+      const paddingX = 14;
+      const paddingY = 8;
 
       const boxW = textWidth + paddingX * 2;
       const boxH = fontSize + paddingY * 2;
-      const boxX = imgX + targetW + (12 * dpr);
+      const boxX = imgX + targetW + 12;
       const boxY = imgY + (targetH - boxH) / 2;
 
       this.ctx.fillStyle = "#ffffff";
       this.ctx.fillRect(boxX, boxY, boxW, boxH);
 
       this.ctx.strokeStyle = "#000000";
-      this.ctx.lineWidth = 2.5 * dpr;
+      this.ctx.lineWidth = 2.5;
       this.ctx.strokeRect(boxX, boxY, boxW, boxH);
 
       this.ctx.fillStyle = "#000000";
@@ -1508,57 +1473,55 @@ export default class Game {
 
     } else {
       this.ctx.fillStyle = "#ffffff";
-      this.ctx.fillRect(imgX, imgY, 140 * dpr, 50 * dpr);
+      this.ctx.fillRect(imgX, imgY, 140, 50);
       this.ctx.fillStyle = "#000000";
-      this.ctx.font = `bold ${Math.floor(22 * dpr)}px Arial`;
-      this.ctx.fillText(`${this.remainingBuildings} / ${this.totalBuildings}`, imgX + (15 * dpr), imgY + (30 * dpr));
+      this.ctx.font = "bold 22px Arial";
+      this.ctx.fillText(`${this.remainingBuildings} / ${this.totalBuildings}`, imgX + 15, imgY + 30);
     }
 
     this.ctx.restore();
   }
 
   drawPauseMenu() {
-    const dpr = this.getDPR();
-
     this.ctx.save();
 
     this.ctx.fillStyle = "rgba(0, 0, 0, 0.75)";
     this.ctx.fillRect(0, 0, this.width, this.height);
 
-    const panelW = Math.min(this.width * 0.85, 380 * dpr);
-    const panelH = Math.min(this.height * 0.65, 220 * dpr);
+    const panelW = 380;
+    const panelH = 220;
     const panelX = (this.width - panelW) / 2;
     const panelY = (this.height - panelH) / 2;
 
     this.ctx.fillStyle = "#2d3436";
     this.ctx.fillRect(panelX, panelY, panelW, panelH);
     this.ctx.strokeStyle = "#ffd700";
-    this.ctx.lineWidth = 3 * dpr;
+    this.ctx.lineWidth = 3;
     this.ctx.strokeRect(panelX, panelY, panelW, panelH);
 
     this.ctx.fillStyle = "#ffd700";
     this.ctx.textAlign = "center";
-    this.ctx.font = `bold ${Math.floor(22 * dpr)}px Arial`;
-    this.ctx.fillText("JUEGO EN PAUSA", this.width / 2, panelY + (panelH * 0.22));
+    this.ctx.font = "bold 24px Arial";
+    this.ctx.fillText("JUEGO EN PAUSA", this.width / 2, panelY + 45);
 
-    const btnW = panelW * 0.8;
-    const btnH = 45 * dpr;
+    const btnW = 280;
+    const btnH = 45;
     const btnX = (this.width - btnW) / 2;
 
-    const resumeY = panelY + (panelH * 0.38);
-    const menuY = panelY + (panelH * 0.68);
+    const resumeY = panelY + 80;
+    const menuY = panelY + 140;
 
     this.ctx.fillStyle = "#00b894";
     this.ctx.fillRect(btnX, resumeY, btnW, btnH);
     this.ctx.fillStyle = "#ffffff";
-    this.ctx.font = `bold ${Math.floor(16 * dpr)}px Arial`;
-    this.ctx.fillText("▶ REANUDAR (ESC)", this.width / 2, resumeY + (btnH * 0.62));
+    this.ctx.font = "bold 18px Arial";
+    this.ctx.fillText("▶ REANUDAR (ESC)", this.width / 2, resumeY + 28);
 
     this.ctx.fillStyle = "#d63031";
     this.ctx.fillRect(btnX, menuY, btnW, btnH);
     this.ctx.fillStyle = "#ffffff";
-    this.ctx.font = `bold ${Math.floor(16 * dpr)}px Arial`;
-    this.ctx.fillText("🏠 MENÚ PRINCIPAL", this.width / 2, menuY + (btnH * 0.62));
+    this.ctx.font = "bold 18px Arial";
+    this.ctx.fillText("🏠 MENÚ PRINCIPAL", this.width / 2, menuY + 28);
 
     this.ctx.restore();
   }
@@ -1604,7 +1567,6 @@ export default class Game {
   }
 
   drawWheel(wx, wy, radius, angle) {
-    const dpr = this.getDPR();
     this.ctx.save();
     this.ctx.translate(wx, wy);
 
@@ -1614,7 +1576,7 @@ export default class Game {
     this.ctx.fill();
 
     this.ctx.strokeStyle = "#000000";
-    this.ctx.lineWidth = 2.5 * dpr;
+    this.ctx.lineWidth = 2.5;
     this.ctx.stroke();
 
     this.ctx.fillStyle = "#333a48";
@@ -1623,12 +1585,12 @@ export default class Game {
     this.ctx.fill();
 
     this.ctx.strokeStyle = "#000000";
-    this.ctx.lineWidth = 2 * dpr;
+    this.ctx.lineWidth = 2;
     this.ctx.stroke();
 
     this.ctx.rotate(angle);
     this.ctx.strokeStyle = "#181c24";
-    this.ctx.lineWidth = 2.5 * dpr;
+    this.ctx.lineWidth = 2.5;
 
     for (let i = 0; i < 4; i++) {
       this.ctx.rotate(Math.PI / 2);
@@ -1647,12 +1609,11 @@ export default class Game {
   }
 
   drawTruck() {
-    const dpr = this.getDPR();
     const x = this.truck.x;
     const w = this.truck.width;
     const h = this.truck.height;
 
-    const truckBob = Math.sin(this.gameTime * 0.0025) * (0.7 * dpr);
+    const truckBob = Math.sin(this.gameTime * 0.0025) * 0.7;
     const y = this.truck.y + truckBob;
 
     // Sombra del camión
@@ -1660,16 +1621,16 @@ export default class Game {
     this.ctx.fillStyle = "rgba(0, 0, 0, 0.45)";
     this.ctx.beginPath();
     this.ctx.ellipse(
-      x + (w * 0.38),
-      y + h - (12 * dpr),
+      x + w * 0.38,
+      y + h - 12,
       w * 0.38,
-      12 * dpr,
+      12,
       0, 0, Math.PI * 2
     );
     this.ctx.fill();
     this.ctx.restore();
 
-    // Imagen base del camión
+    // Imagen base
     const isFrame1 = Math.floor(this.gameTime / 10000) % 2 === 0;
     const currentTruckImg = isFrame1 ? this.truckImg1 : this.truckImg2;
 
@@ -1680,32 +1641,32 @@ export default class Game {
       this.ctx.fillRect(x, y + 20, w * 0.8, h * 0.5);
     }
 
-    // Ruedas animadas
+    // Ruedas
     const wheelRadius = w * 0.078;                       
-    const wheelY = y + h - wheelRadius + (3 * dpr);      
+    const wheelY = y + h - wheelRadius + 3;      
     const wheelAngle = this.roadOffsetX / wheelRadius;
 
-    const rearWheelX = x + (w * 0.188);
-    const frontWheelX = x + (w * 0.685);
+    const rearWheelX = x + w * 0.188;
+    const frontWheelX = x + w * 0.685;
 
     this.drawWheel(rearWheelX, wheelY, wheelRadius, wheelAngle);
     this.drawWheel(frontWheelX, wheelY, wheelRadius, wheelAngle);
 
-    // --- SIRENA LUMINOSA RESTAURADA (DEGRADADO Y DESTELLO COMPLETO) ---
+    // DESTELLOS DE SIRENA ORIGINALES
     if (this.isTurbo) {
       this.ctx.save();
 
-      const sirenY = y + (h * 0.535);
-      const sirenBlueY = y + (h * 0.542);
-      const sirenBlueX = x + (w * 0.785);
-      const sirenRedX = x + (w * 0.825);
+      const sirenY = y + h * 0.535;
+      const sirenBlueY = y + h * 0.542;
+      const sirenBlueX = x + w * 0.785;
+      const sirenRedX = x + w * 0.825;
 
       const flash = Math.floor(this.gameTime / 90) % 2 === 0;
 
       // LUZ AZUL
       const blueAlpha = flash ? 0.95 : 0.25;
-      const blueRadius = (flash ? 24 : 12) * dpr;
-      let gradBlue = this.ctx.createRadialGradient(sirenBlueX, sirenBlueY, 2 * dpr, sirenBlueX, sirenBlueY, blueRadius);
+      const blueRadius = flash ? 24 : 12;
+      let gradBlue = this.ctx.createRadialGradient(sirenBlueX, sirenBlueY, 2, sirenBlueX, sirenBlueY, blueRadius);
       gradBlue.addColorStop(0, `rgba(255, 255, 255, ${blueAlpha})`);
       gradBlue.addColorStop(0.35, `rgba(0, 160, 255, ${blueAlpha})`);
       gradBlue.addColorStop(1, "rgba(0, 160, 255, 0)");
@@ -1717,8 +1678,8 @@ export default class Game {
 
       // LUZ ROJA
       const redAlpha = !flash ? 0.95 : 0.25;
-      const redRadius = (!flash ? 24 : 12) * dpr;
-      let gradRed = this.ctx.createRadialGradient(sirenRedX, sirenY, 2 * dpr, sirenRedX, sirenY, redRadius);
+      const redRadius = !flash ? 24 : 12;
+      let gradRed = this.ctx.createRadialGradient(sirenRedX, sirenY, 2, sirenRedX, sirenY, redRadius);
       gradRed.addColorStop(0, `rgba(255, 255, 255, ${redAlpha})`);
       gradRed.addColorStop(0.35, `rgba(255, 40, 40, ${redAlpha})`);
       gradRed.addColorStop(1, "rgba(255, 40, 40, 0)");
