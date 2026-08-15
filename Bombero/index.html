@@ -15,6 +15,8 @@
       overflow: hidden;
       background: #000;
       user-select: none;
+      -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
     }
     canvas {
       display: block;
@@ -22,12 +24,69 @@
       height: 100vh;
       cursor: crosshair;
     }
+
+    /* Botón de pantalla completa */
+    .fullscreen-btn {
+      position: fixed;
+      bottom: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 10px 20px;
+      background: #ffd700;
+      color: #0f1418;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(255, 215, 0, 0.3);
+      z-index: 1000;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .fullscreen-btn:hover {
+      transform: translateX(-50%) scale(1.05);
+      box-shadow: 0 6px 16px rgba(255, 215, 0, 0.5);
+    }
+
+    .fullscreen-btn:active {
+      transform: translateX(-50%) scale(0.98);
+    }
   </style>
 </head>
 <body>
 
   <canvas id="gameCanvas"></canvas>
+  <button class="fullscreen-btn" id="btn-fullscreen">Pantalla completa</button>
 
   <script type="module" src="main.js"></script>
+  <script>
+    // Botón de pantalla completa
+    document.getElementById('btn-fullscreen').addEventListener('click', async () => {
+      const elem = document.documentElement;
+
+      if (!document.fullscreenElement) {
+        try {
+          await elem.requestFullscreen({ navigationUI: "hide" });
+        } catch (e) {
+          console.error("No se pudo activar pantalla completa:", e);
+        }
+      } else {
+        await document.exitFullscreen();
+      }
+    });
+
+    // Doble toque para volver al menú
+    let lastTap = 0;
+    document.addEventListener('touchend', (e) => {
+      const currentTime = new Date().getTime();
+      const tapLength = currentTime - lastTap;
+      if (tapLength < 300 && tapLength > 0) {
+        window.location.href = '../index.html';
+        e.preventDefault();
+      }
+      lastTap = currentTime;
+    });
+  </script>
 </body>
 </html>
