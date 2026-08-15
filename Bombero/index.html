@@ -24,7 +24,7 @@
       cursor: crosshair;
     }
 
-    /* BOTÓN PANTALLA COMPLETA (SEMI-TRANSPARENTE) */
+    /* BOTÓN PANTALLA COMPLETA */
     #btn-fullscreen {
       position: fixed;
       top: 12px;
@@ -33,7 +33,7 @@
       height: 44px;
       border-radius: 50%;
       border: 1.5px solid rgba(255, 255, 255, 0.4);
-      background: rgba(0, 0, 0, 0.35); /* Fondo transparente */
+      background: rgba(0, 0, 0, 0.35);
       color: rgba(255, 255, 255, 0.75);
       font-size: 1.2rem;
       cursor: pointer;
@@ -41,7 +41,7 @@
       align-items: center;
       justify-content: center;
       z-index: 9999;
-      opacity: 0.6; /* Transparencia general */
+      opacity: 0.6;
       backdrop-filter: blur(2px);
       transition: opacity 0.2s ease;
       -webkit-tap-highlight-color: transparent;
@@ -52,7 +52,16 @@
       background: rgba(255, 255, 255, 0.2);
     }
 
-    /* 1. MODO HORIZONTAL (LANDSCAPE): INTACTO, TAMAÑO ORIGINAL SIN ESCALAR */
+    /* FORZAR BOTONES TÁCTILES TRANSPARENTES */
+    .touch-controls, .virtual-dpad, .touch-btn, [class*="touch"], [class*="btn"] {
+      background: transparent !important;
+      background-color: transparent !important;
+      border: 1.5px solid rgba(255, 255, 255, 0.4) !important;
+      color: rgba(255, 255, 255, 0.85) !important;
+      box-shadow: none !important;
+    }
+
+    /* 1. MODO HORIZONTAL (LANDSCAPE) */
     @media (orientation: landscape) {
       #btn-fullscreen {
         width: 44px !important;
@@ -63,25 +72,27 @@
         transform: none !important;
       }
 
-      /* Fuerza a que NINGÚN control táctil se escale en horizontal */
-      .touch-controls, .virtual-dpad, .touch-btn {
-        transform: none !important;
+      .touch-controls, .virtual-dpad, #touchControls {
+        left: 4px !important;
+        transform: scale(0.95) !important;
+        transform-origin: bottom left !important;
       }
     }
 
-    /* 2. MODO VERTICAL (PORTRAIT): ÚNICO SITIO DONDE SE AGRANDA */
+    /* 2. MODO VERTICAL (PORTRAIT): MÁS PEQUEÑO Y MÁS A LA IZQUIERDA */
     @media (orientation: portrait) {
       #btn-fullscreen {
-        width: 58px !important;
-        height: 58px !important;
-        font-size: 1.6rem !important;
-        top: 16px !important;
-        left: 16px !important;
+        width: 50px !important;
+        height: 50px !important;
+        font-size: 1.4rem !important;
+        top: 14px !important;
+        left: 14px !important;
       }
 
-      .touch-controls, .virtual-dpad, .touch-btn {
-        transform: scale(1.35) !important;
-        transform-origin: bottom left;
+      .touch-controls, .virtual-dpad, #touchControls {
+        left: 4px !important;
+        transform: scale(1.15) !important;
+        transform-origin: bottom left !important;
       }
     }
   </style>
