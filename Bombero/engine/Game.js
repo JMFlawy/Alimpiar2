@@ -138,7 +138,7 @@ export default class Game {
     this.bindEvents();
   }
 
-// --- INTERFAZ HTML TÁCTIL 100% TRANSPARENTE ---
+// --- INTERFAZ HTML TÁCTIL (CON RECUADRO Y FONDO TRANSPARENTE) ---
   createMobileUI() {
     if (!this.isMobile) return;
 
@@ -167,17 +167,14 @@ export default class Game {
       btn.style.webkitUserSelect = "none";
       btn.style.touchAction = "manipulation";
       
-      // Totalmente transparente
+      // Recuadro original pero con FONDO 100% TRANSPARENTE
       btn.style.backgroundColor = "transparent";
-      btn.style.border = "none";
-      btn.style.outline = "none";
+      btn.style.border = "1.5px solid rgba(255, 255, 255, 0.6)";
+      btn.style.borderRadius = "14px";
+      btn.style.fontWeight = "bold";
+      btn.style.color = "rgba(255, 255, 255, 0.9)";
       btn.style.boxShadow = "none";
       btn.style.backdropFilter = "none";
-      
-      // Estilo de texto con sombra para contraste visual sin tapar el fondo
-      btn.style.fontWeight = "bold";
-      btn.style.color = "rgba(255, 255, 255, 0.85)";
-      btn.style.textShadow = "0px 2px 5px rgba(0, 0, 0, 0.8)";
       
       Object.assign(btn.style, cssStyles);
       this.mobileOverlay.appendChild(btn);
@@ -187,43 +184,44 @@ export default class Game {
     const safeBottom = "calc(20px + env(safe-area-inset-bottom, 0px))";
     const safeTop = "calc(12px + env(safe-area-inset-top, 0px))";
 
-    // 1. Botón Pausa
+    // 1. Botón Pausa (Recuadro circular sin fondo)
     this.btnPause = makeBtn("⏸", {
       top: safeTop,
       right: "12px",
       width: "44px",
       height: "44px",
-      fontSize: "22px"
+      fontSize: "20px",
+      borderRadius: "50%"
     });
 
-    // 2. Botón Izquierda
+    // 2. Botón Izquierda (Pegado a 8px)
     this.btnLeft = makeBtn("◀", {
       bottom: safeBottom,
       left: "8px",
-      width: "60px",
-      height: "60px",
-      fontSize: "32px"
+      width: "65px",
+      height: "65px",
+      fontSize: "26px"
     });
 
-    // 3. Botón Derecha
+    // 3. Botón Derecha (Pegado a 78px)
     this.btnRight = makeBtn("▶", {
       bottom: safeBottom,
-      left: "72px",
-      width: "60px",
-      height: "60px",
-      fontSize: "32px"
+      left: "78px",
+      width: "65px",
+      height: "65px",
+      fontSize: "26px"
     });
 
     // 4. Botón Turbo
     this.btnTurbo = makeBtn("⚡ TURBO", {
       bottom: safeBottom,
       right: "12px",
-      width: "100px",
-      height: "60px",
-      fontSize: "16px"
+      width: "110px",
+      height: "65px",
+      fontSize: "15px"
     });
 
-    // Eventos táctiles (solo escalan levemente al pulsar)
+    // Eventos de toque (Mantiene el recuadro, solo ilumina suavemente el borde al pulsar)
     const bindHold = (btn, keyName, isTurbo = false) => {
       const start = (e) => {
         e.preventDefault();
@@ -233,8 +231,9 @@ export default class Game {
           this.playSound(this.sndTurbo);
         }
         this.mobileKeys[keyName] = true;
-        btn.style.transform = "scale(0.85)";
-        btn.style.opacity = "0.6";
+        btn.style.transform = "scale(0.92)";
+        btn.style.borderColor = "rgba(255, 255, 255, 1)";
+        btn.style.backgroundColor = "rgba(255, 255, 255, 0.15)";
       };
 
       const end = (e) => {
@@ -242,7 +241,8 @@ export default class Game {
         e.stopPropagation();
         this.mobileKeys[keyName] = false;
         btn.style.transform = "scale(1)";
-        btn.style.opacity = "1";
+        btn.style.borderColor = "rgba(255, 255, 255, 0.6)";
+        btn.style.backgroundColor = "transparent";
       };
 
       btn.addEventListener("touchstart", start, { passive: false });
