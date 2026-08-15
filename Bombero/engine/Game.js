@@ -138,7 +138,7 @@ export default class Game {
     this.bindEvents();
   }
 
-  // --- INTERFAZ HTML TÁCTIL EN LOS MÁRGENES ---
+ // --- INTERFAZ HTML TÁCTIL EN LOS MÁRGENES ---
   createMobileUI() {
     if (!this.isMobile) return;
 
@@ -151,7 +151,7 @@ export default class Game {
     this.mobileOverlay.style.top = "0";
     this.mobileOverlay.style.left = "0";
     this.mobileOverlay.style.width = "100vw";
-    this.mobileOverlay.style.height = "100dvh"; // Dynamic Viewport Height para adaptarse al navegador
+    this.mobileOverlay.style.height = "100dvh";
     this.mobileOverlay.style.pointerEvents = "none";
     this.mobileOverlay.style.zIndex = "9999";
     this.mobileOverlay.style.display = "none";
@@ -166,62 +166,63 @@ export default class Game {
       btn.style.userSelect = "none";
       btn.style.webkitUserSelect = "none";
       btn.style.touchAction = "manipulation";
-      btn.style.border = "2px solid rgba(255, 255, 255, 0.85)";
+      btn.style.border = "1.5px solid rgba(255, 255, 255, 0.4)";
       btn.style.borderRadius = "14px";
       btn.style.fontWeight = "bold";
-      btn.style.color = "#ffffff";
-      btn.style.boxShadow = "0 4px 12px rgba(0, 0, 0, 0.6)";
-      btn.style.backdropFilter = "blur(4px)";
+      btn.style.color = "rgba(255, 255, 255, 0.85)";
+      btn.style.boxShadow = "none";
+      btn.style.backdropFilter = "blur(2px)";
       Object.assign(btn.style, cssStyles);
       this.mobileOverlay.appendChild(btn);
       return btn;
     };
 
-    // Altura calculada evitando barras de Safari/Chrome
-    const safeBottom = "calc(35px + env(safe-area-inset-bottom, 0px))";
-    const safeTop = "calc(15px + env(safe-area-inset-top, 0px))";
+    // Márgenes seguros ajustados
+    const safeBottom = "calc(20px + env(safe-area-inset-bottom, 0px))";
+    const safeTop = "calc(12px + env(safe-area-inset-top, 0px))";
 
-    // 1. Botón de Pausa (Arriba a la derecha)
+    // 1. Botón de Pausa (Arriba a la derecha - Transparente)
     this.btnPause = makeBtn("⏸", {
       top: safeTop,
-      right: "15px",
-      width: "50px",
-      height: "50px",
-      fontSize: "22px",
-      backgroundColor: "rgba(214, 48, 49, 0.85)"
+      right: "12px",
+      width: "44px",
+      height: "44px",
+      fontSize: "20px",
+      borderRadius: "50%",
+      backgroundColor: "rgba(0, 0, 0, 0.35)"
     });
 
-    // 2. Botón Izquierda (Abajo a la izquierda)
+    // 2. Botón Izquierda (Pegado más a la izquierda: 8px)
     this.btnLeft = makeBtn("◀", {
       bottom: safeBottom,
-      left: "15px",
-      width: "70px",
-      height: "70px",
-      fontSize: "28px",
-      backgroundColor: "rgba(41, 128, 185, 0.85)"
+      left: "8px",
+      width: "65px",
+      height: "65px",
+      fontSize: "26px",
+      backgroundColor: "rgba(0, 0, 0, 0.35)"
     });
 
-    // 3. Botón Derecha (Al lado del de izquierda)
+    // 3. Botón Derecha (Ajustado junto al botón izquierdo: 78px)
     this.btnRight = makeBtn("▶", {
       bottom: safeBottom,
-      left: "95px",
-      width: "70px",
-      height: "70px",
-      fontSize: "28px",
-      backgroundColor: "rgba(41, 128, 185, 0.85)"
+      left: "78px",
+      width: "65px",
+      height: "65px",
+      fontSize: "26px",
+      backgroundColor: "rgba(0, 0, 0, 0.35)"
     });
 
-    // 4. Botón Turbo (Abajo a la derecha - Estilo Mando Arcade)
+    // 4. Botón Turbo (Abajo a la derecha - Transparente)
     this.btnTurbo = makeBtn("⚡ TURBO", {
       bottom: safeBottom,
-      right: "15px",
-      width: "120px",
-      height: "70px",
-      fontSize: "16px",
-      backgroundColor: "rgba(230, 126, 34, 0.9)"
+      right: "12px",
+      width: "110px",
+      height: "65px",
+      fontSize: "15px",
+      backgroundColor: "rgba(0, 0, 0, 0.35)"
     });
 
-    // Asignación de controles táctiles mantenidos
+    // Eventos táctiles manteniéndose transparentes al pulsar
     const bindHold = (btn, keyName, isTurbo = false) => {
       const start = (e) => {
         e.preventDefault();
@@ -232,8 +233,7 @@ export default class Game {
         }
         this.mobileKeys[keyName] = true;
         btn.style.transform = "scale(0.92)";
-        btn.style.backgroundColor = "#f1c40f";
-        btn.style.color = "#000000";
+        btn.style.backgroundColor = "rgba(255, 255, 255, 0.25)";
       };
 
       const end = (e) => {
@@ -241,8 +241,7 @@ export default class Game {
         e.stopPropagation();
         this.mobileKeys[keyName] = false;
         btn.style.transform = "scale(1)";
-        btn.style.backgroundColor = isTurbo ? "rgba(230, 126, 34, 0.9)" : "rgba(41, 128, 185, 0.85)";
-        btn.style.color = "#ffffff";
+        btn.style.backgroundColor = "rgba(0, 0, 0, 0.35)";
       };
 
       btn.addEventListener("touchstart", start, { passive: false });
