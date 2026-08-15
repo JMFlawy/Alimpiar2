@@ -138,7 +138,7 @@ export default class Game {
     this.bindEvents();
   }
 
- // --- INTERFAZ HTML TÁCTIL EN LOS MÁRGENES ---
+// --- INTERFAZ HTML TÁCTIL 100% TRANSPARENTE ---
   createMobileUI() {
     if (!this.isMobile) return;
 
@@ -166,63 +166,64 @@ export default class Game {
       btn.style.userSelect = "none";
       btn.style.webkitUserSelect = "none";
       btn.style.touchAction = "manipulation";
-      btn.style.border = "1.5px solid rgba(255, 255, 255, 0.4)";
-      btn.style.borderRadius = "14px";
+      
+      // Totalmente transparente
+      btn.style.backgroundColor = "transparent";
+      btn.style.border = "none";
+      btn.style.outline = "none";
+      btn.style.boxShadow = "none";
+      btn.style.backdropFilter = "none";
+      
+      // Estilo de texto con sombra para contraste visual sin tapar el fondo
       btn.style.fontWeight = "bold";
       btn.style.color = "rgba(255, 255, 255, 0.85)";
-      btn.style.boxShadow = "none";
-      btn.style.backdropFilter = "blur(2px)";
+      btn.style.textShadow = "0px 2px 5px rgba(0, 0, 0, 0.8)";
+      
       Object.assign(btn.style, cssStyles);
       this.mobileOverlay.appendChild(btn);
       return btn;
     };
 
-    // Márgenes seguros ajustados
     const safeBottom = "calc(20px + env(safe-area-inset-bottom, 0px))";
     const safeTop = "calc(12px + env(safe-area-inset-top, 0px))";
 
-    // 1. Botón de Pausa (Arriba a la derecha - Transparente)
+    // 1. Botón Pausa
     this.btnPause = makeBtn("⏸", {
       top: safeTop,
       right: "12px",
       width: "44px",
       height: "44px",
-      fontSize: "20px",
-      borderRadius: "50%",
-      backgroundColor: "rgba(0, 0, 0, 0.35)"
+      fontSize: "22px"
     });
 
-    // 2. Botón Izquierda (Pegado más a la izquierda: 8px)
+    // 2. Botón Izquierda
     this.btnLeft = makeBtn("◀", {
       bottom: safeBottom,
       left: "8px",
-      width: "65px",
-      height: "65px",
-      fontSize: "26px",
-      backgroundColor: "rgba(0, 0, 0, 0.35)"
+      width: "60px",
+      height: "60px",
+      fontSize: "32px"
     });
 
-    // 3. Botón Derecha (Ajustado junto al botón izquierdo: 78px)
+    // 3. Botón Derecha
     this.btnRight = makeBtn("▶", {
       bottom: safeBottom,
-      left: "78px",
-      width: "65px",
-      height: "65px",
-      fontSize: "26px",
-      backgroundColor: "rgba(0, 0, 0, 0.35)"
+      left: "72px",
+      width: "60px",
+      height: "60px",
+      fontSize: "32px"
     });
 
-    // 4. Botón Turbo (Abajo a la derecha - Transparente)
+    // 4. Botón Turbo
     this.btnTurbo = makeBtn("⚡ TURBO", {
       bottom: safeBottom,
       right: "12px",
-      width: "110px",
-      height: "65px",
-      fontSize: "15px",
-      backgroundColor: "rgba(0, 0, 0, 0.35)"
+      width: "100px",
+      height: "60px",
+      fontSize: "16px"
     });
 
-    // Eventos táctiles manteniéndose transparentes al pulsar
+    // Eventos táctiles (solo escalan levemente al pulsar)
     const bindHold = (btn, keyName, isTurbo = false) => {
       const start = (e) => {
         e.preventDefault();
@@ -232,8 +233,8 @@ export default class Game {
           this.playSound(this.sndTurbo);
         }
         this.mobileKeys[keyName] = true;
-        btn.style.transform = "scale(0.92)";
-        btn.style.backgroundColor = "rgba(255, 255, 255, 0.25)";
+        btn.style.transform = "scale(0.85)";
+        btn.style.opacity = "0.6";
       };
 
       const end = (e) => {
@@ -241,7 +242,7 @@ export default class Game {
         e.stopPropagation();
         this.mobileKeys[keyName] = false;
         btn.style.transform = "scale(1)";
-        btn.style.backgroundColor = "rgba(0, 0, 0, 0.35)";
+        btn.style.opacity = "1";
       };
 
       btn.addEventListener("touchstart", start, { passive: false });
@@ -255,7 +256,6 @@ export default class Game {
     bindHold(this.btnRight, "right");
     bindHold(this.btnTurbo, "turbo", true);
 
-    // Evento para pausar
     const togglePause = (e) => {
       e.preventDefault();
       e.stopPropagation();
