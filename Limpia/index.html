@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
   <title>¡Limpia, limpia!</title>
 
   <link rel="stylesheet" href="css/style.css" />
@@ -154,7 +154,7 @@
       }
     });
 
-    // 2. SISTEMA DE PAUSA
+    // 2. SISTEMA DE PAUSA Y CONTROL DE MÚSICA
     const pauseOverlay = document.getElementById("pause-overlay");
     const btnPause = document.getElementById("btn-pause");
     const btnResume = document.getElementById("btn-resume");
@@ -163,9 +163,15 @@
     function setPause(isPaused) {
       if (isPaused) {
         pauseOverlay.classList.remove("hidden");
+        // Pausa todos los elementos de audio HTML activos
+        document.querySelectorAll("audio").forEach(audio => audio.pause());
       } else {
         pauseOverlay.classList.add("hidden");
+        // Reanuda la reproducción de audio HTML
+        document.querySelectorAll("audio").forEach(audio => audio.play().catch(() => {}));
       }
+
+      // Notifica a main.js para pausar el motor de físicas, bucles y Web Audio API
       window.dispatchEvent(new CustomEvent("togglePause", { detail: { isPaused } }));
     }
 
