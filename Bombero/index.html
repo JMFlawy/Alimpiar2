@@ -24,7 +24,7 @@
       cursor: crosshair;
     }
 
-    /* BOTÓN PANTALLA COMPLETA BASE (ARRIBA A LA IZQUIERDA) */
+    /* BOTÓN PANTALLA COMPLETA (SEMI-TRANSPARENTE) */
     #btn-fullscreen {
       position: fixed;
       top: 12px;
@@ -32,19 +32,27 @@
       width: 44px;
       height: 44px;
       border-radius: 50%;
-      border: 2px solid rgba(255, 255, 255, 0.8);
-      background: rgba(0, 0, 0, 0.65);
-      color: #ffffff;
+      border: 1.5px solid rgba(255, 255, 255, 0.4);
+      background: rgba(0, 0, 0, 0.35); /* Fondo transparente */
+      color: rgba(255, 255, 255, 0.75);
       font-size: 1.2rem;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
       z-index: 9999;
+      opacity: 0.6; /* Transparencia general */
+      backdrop-filter: blur(2px);
+      transition: opacity 0.2s ease;
       -webkit-tap-highlight-color: transparent;
     }
 
-    /* 1. MODO HORIZONTAL (LANDSCAPE): TAMAÑO NORMAL EN LA IZQUIERDA */
+    #btn-fullscreen:active {
+      opacity: 1;
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    /* 1. MODO HORIZONTAL (LANDSCAPE): INTACTO, TAMAÑO ORIGINAL SIN ESCALAR */
     @media (orientation: landscape) {
       #btn-fullscreen {
         width: 44px !important;
@@ -52,15 +60,16 @@
         font-size: 1.2rem !important;
         top: 12px !important;
         left: 12px !important;
-        right: auto !important;
+        transform: none !important;
       }
 
+      /* Fuerza a que NINGÚN control táctil se escale en horizontal */
       .touch-controls, .virtual-dpad, .touch-btn {
-        transform: scale(1) !important;
+        transform: none !important;
       }
     }
 
-    /* 2. MODO VERTICAL (PORTRAIT): MÁS GRANDE EN LA IZQUIERDA */
+    /* 2. MODO VERTICAL (PORTRAIT): ÚNICO SITIO DONDE SE AGRANDA */
     @media (orientation: portrait) {
       #btn-fullscreen {
         width: 58px !important;
@@ -68,7 +77,6 @@
         font-size: 1.6rem !important;
         top: 16px !important;
         left: 16px !important;
-        right: auto !important;
       }
 
       .touch-controls, .virtual-dpad, .touch-btn {
