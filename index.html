@@ -13,7 +13,6 @@
       padding: 0;
       user-select: none;
       -webkit-user-select: none;
-      -webkit-tap-highlight-color: transparent;
     }
 
     body {
@@ -24,43 +23,29 @@
       align-items: center;
       justify-content: center;
       overflow: hidden;
-      flex-direction: column;
     }
 
-    /* Contenedor cuadrado en móvil */
-    .menu-container {
-      position: relative;
-      width: 100vmin;
-      height: 100vmin;
-      max-width: 100vw;
-      max-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
+    /* Contenedor que mantiene la proporción exacta de menu.png */
     .menu-wrapper {
       position: relative;
-      width: 100%;
-      height: 100%;
+      width: 100vw;
+      max-height: 100vh;
+      aspect-ratio: 2.15 / 1; /* Proporción de la imagen menu.png */
       background-image: url('Bombero/assets/menu.png');
       background-size: contain;
       background-repeat: no-repeat;
       background-position: center;
     }
 
-    /* En escritorio, mantener proporción original */
-    @media (min-width: 768px) {
-      .menu-container {
+    /* Ajuste para pantallas donde el alto manda */
+    @media (min-aspect-ratio: 2.15/1) {
+      .menu-wrapper {
         width: auto;
-        height: auto;
-        aspect-ratio: 2.15 / 1;
-        max-width: 95vw;
-        max-height: 90vh;
+        height: 100vh;
       }
     }
 
-    /* Huecos seleccionables */
+    /* Estilos base para los huecos seleccionables */
     .game-slot {
       position: absolute;
       top: 31.7%;
@@ -75,14 +60,17 @@
       transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
     }
 
+    /* Posición exacta del hueco izquierdo */
     .slot-left {
       left: 22.4%;
     }
 
+    /* Posición exacta del hueco derecho */
     .slot-right {
       left: 51.4%;
     }
 
+    /* Efectos táctiles y de ratón (iluminación dorada) */
     .game-slot:hover, .game-slot:active {
       transform: scale(1.04);
       border-color: #ffd700;
@@ -90,6 +78,7 @@
       z-index: 10;
     }
 
+    /* Imágenes de las portadas dentro de los huecos */
     .game-slot img {
       width: 100%;
       height: 100%;
@@ -101,80 +90,23 @@
     .game-slot:hover img {
       transform: scale(1.06);
     }
-
-    /* Botón de pantalla completa */
-    .fullscreen-btn {
-      margin-top: 16px;
-      padding: 10px 20px;
-      background: #ffd700;
-      color: #0f1418;
-      border: none;
-      border-radius: 8px;
-      font-size: 14px;
-      font-weight: 600;
-      cursor: pointer;
-      box-shadow: 0 4px 12px rgba(255, 215, 0, 0.3);
-      transition: transform 0.2s ease, box-shadow 0.2s ease;
-    }
-
-    .fullscreen-btn:hover {
-      transform: scale(1.05);
-      box-shadow: 0 6px 16px rgba(255, 215, 0, 0.5);
-    }
-
-    .fullscreen-btn:active {
-      transform: scale(0.98);
-    }
   </style>
 </head>
 <body>
 
-  <div class="menu-container">
-    <div class="menu-wrapper">
-      
-      <!-- JUEGO 1: 1.-¡A LIMPIAR! (Hueco Izquierdo) -->
-      <a href="Limpia/index.html" class="game-slot slot-left" title="1.-¡A LIMPIAR!">
-        <img src="Limpia/assets/backgrounds/inicio.png" alt="1.-¡A LIMPIAR!">
-      </a>
+  <div class="menu-wrapper">
+    
+    <!-- JUEGO 1: 1.-¡A LIMPIAR! (Hueco Izquierdo) -->
+    <a href="Limpia/index.html" class="game-slot slot-left" title="1.-¡A LIMPIAR!">
+      <img src="Limpia/assets/backgrounds/inicio.png" alt="1.-¡A LIMPIAR!">
+    </a>
 
-      <!-- JUEGO 2: 2.-¡BOMBERO! (Hueco Derecho) -->
-      <a href="Bombero/index.html" class="game-slot slot-right" title="2.-¡BOMBERO!">
-        <img src="Bombero/assets/portada.png" alt="2.-¡BOMBERO!">
-      </a>
+    <!-- JUEGO 2: 2.-¡BOMBERO! (Hueco Derecho) -->
+    <a href="Bombero/index.html" class="game-slot slot-right" title="2.-¡BOMBERO!">
+      <img src="Bombero/assets/portada.png" alt="2.-¡BOMBERO!">
+    </a>
 
-    </div>
   </div>
-
-  <button class="fullscreen-btn" id="btn-fullscreen">Pantalla completa</button>
-
-  <script>
-    // Botón de pantalla completa
-    document.getElementById('btn-fullscreen').addEventListener('click', async () => {
-      const elem = document.documentElement;
-
-      if (!document.fullscreenElement) {
-        try {
-          await elem.requestFullscreen({ navigationUI: "hide" });
-        } catch (e) {
-          console.error("No se pudo activar pantalla completa:", e);
-        }
-      } else {
-        await document.exitFullscreen();
-      }
-    });
-
-    // Doble toque para saltar secuencias (redirige al menú principal)
-    let lastTap = 0;
-    document.addEventListener('touchend', (e) => {
-      const currentTime = new Date().getTime();
-      const tapLength = currentTime - lastTap;
-      if (tapLength < 300 && tapLength > 0) {
-        window.location.href = 'index.html';
-        e.preventDefault();
-      }
-      lastTap = currentTime;
-    });
-  </script>
 
 </body>
 </html>
