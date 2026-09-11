@@ -17,7 +17,7 @@
 
     body {
       width: 100vw;
-      height: 100vh;
+      height: 100dvh;
       background-color: #0f1418;
       display: flex;
       align-items: center;
@@ -25,88 +25,142 @@
       overflow: hidden;
     }
 
-    /* Contenedor que mantiene la proporción exacta de menu.png */
+    /* Contenedor principal */
     .menu-wrapper {
       position: relative;
       width: 100vw;
-      max-height: 100vh;
-      aspect-ratio: 2.15 / 1; /* Proporción de la imagen menu.png */
+      height: 100dvh;
+      max-width: calc(100dvh * 2.15);
+      max-height: calc(100vw / 2.15);
+      aspect-ratio: 2.15 / 1;
       background-image: url('Bombero/assets/menu.png');
       background-size: contain;
       background-repeat: no-repeat;
       background-position: center;
     }
 
-    /* Ajuste para pantallas donde el alto manda */
-    @media (min-aspect-ratio: 2.15/1) {
-      .menu-wrapper {
-        width: auto;
-        height: 100vh;
-      }
-    }
-
-    /* Estilos base para los huecos seleccionables */
+    /* Estilos base para los 3 huecos panorámicos */
     .game-slot {
       position: absolute;
-      top: 31.7%;
-      width: 26.2%;
-      height: 48.6%;
-      border-radius: 10px;
+      top: 37%;
+      width: 27%; /* Más ancho para formato panorámico */
+      height: 38%; /* Ajustado para mantener proporción panorámica 16:9 aprox */
+      aspect-ratio: 16 / 9;
+      border-radius: 12px;
       overflow: hidden;
       cursor: pointer;
       text-decoration: none;
       border: 3px solid transparent;
+      background-color: rgba(0, 0, 0, 0.4); /* Fondo oscuro por si la imagen tiene márgenes */
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
       transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
-    /* Posición exacta del hueco izquierdo */
-    .slot-left {
-      left: 22.4%;
-    }
+    /* Posiciones exactas y mejor distribuidas para las tarjetas panorámicas */
+    .slot-1 { left: 6%; }    /* Juego 1: Limpia */
+    .slot-2 { left: 36.5%; } /* Juego 2: Bombero */
+    .slot-3 { left: 67%; }   /* Juego 3: Autobús */
 
-    /* Posición exacta del hueco derecho */
-    .slot-right {
-      left: 51.4%;
-    }
-
-    /* Efectos táctiles y de ratón (iluminación dorada) */
+    /* Efectos táctiles y de ratón */
     .game-slot:hover, .game-slot:active {
-      transform: scale(1.04);
+      transform: scale(1.05);
       border-color: #ffd700;
       box-shadow: 0 0 25px rgba(255, 215, 0, 0.9);
       z-index: 10;
     }
 
-    /* Imágenes de las portadas dentro de los huecos */
     .game-slot img {
       width: 100%;
       height: 100%;
-      object-fit: cover;
+      object-fit: contain; /* Muestra toda la imagen panorámica sin recortes */
       display: block;
       transition: transform 0.3s ease;
     }
 
     .game-slot:hover img {
-      transform: scale(1.06);
+      transform: scale(1.05);
+    }
+
+    /* Botón Flotante Pantalla Completa */
+    .top-right-ui {
+      position: fixed;
+      top: 12px;
+      right: 12px;
+      z-index: 9999;
+    }
+
+    .ui-btn {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      border: 2px solid rgba(255, 255, 255, 0.8);
+      background: rgba(0, 0, 0, 0.65);
+      color: #ffffff;
+      font-size: 1.2rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      backdrop-filter: blur(4px);
+      -webkit-tap-highlight-color: transparent;
+      transition: transform 0.1s ease, background 0.2s ease;
+    }
+
+    .ui-btn:active {
+      transform: scale(0.9);
+      background: rgba(255, 255, 255, 0.3);
     }
   </style>
 </head>
 <body>
 
+  <!-- BOTÓN PANTALLA COMPLETA -->
+  <div class="top-right-ui">
+    <button id="btn-fullscreen" class="ui-btn" title="Pantalla Completa">⛶</button>
+  </div>
+
   <div class="menu-wrapper">
     
-    <!-- JUEGO 1: 1.-¡A LIMPIAR! (Hueco Izquierdo) -->
-    <a href="Limpia/index.html" class="game-slot slot-left" title="1.-¡A LIMPIAR!">
+    <!-- JUEGO 1: 1.-¡A LIMPIAR! -->
+    <a href="Limpia/index.html" class="game-slot slot-1" title="1.-¡A LIMPIAR!">
       <img src="Limpia/assets/backgrounds/inicio.png" alt="1.-¡A LIMPIAR!">
     </a>
 
-    <!-- JUEGO 2: 2.-¡BOMBERO! (Hueco Derecho) -->
-    <a href="Bombero/index.html" class="game-slot slot-right" title="2.-¡BOMBERO!">
+    <!-- JUEGO 2: 2.-¡BOMBERO! -->
+    <a href="Bombero/index.html" class="game-slot slot-2" title="2.-¡BOMBERO!">
       <img src="Bombero/assets/portada.png" alt="2.-¡BOMBERO!">
     </a>
 
+    <!-- JUEGO 3: 3.-¡AUTOBÚS! -->
+    <a href="Autobus/index.html" class="game-slot slot-3" title="3.-¡AUTOBÚS!">
+      <img src="Autobus/assets/portada.png" alt="3.-¡AUTOBÚS!">
+    </a>
+
   </div>
+
+  <script>
+    const btnFullscreen = document.getElementById("btn-fullscreen");
+
+    btnFullscreen.addEventListener("click", () => {
+      const doc = document.documentElement;
+      if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+        if (doc.requestFullscreen) {
+          doc.requestFullscreen();
+        } else if (doc.webkitRequestFullscreen) {
+          doc.webkitRequestFullscreen();
+        }
+      } else {
+        if (document.exitFullscreen) {
+          document.exitFullscreen();
+        } else if (document.webkitExitFullscreen) {
+          document.webkitExitFullscreen();
+        }
+      }
+    });
+  </script>
 
 </body>
 </html>

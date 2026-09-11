@@ -1,0 +1,13 @@
+mételos donde corresponda!!!!
+métete esos archivos de mp3 en el juego, en estos casos (te adjunto los ficheros, si ves mejor crear otro archivo lo creas): 
+-atras: cuando el bus da marcha atrás
+-barro: cuando contacta con el barro y se mancha
+-limpia: cuando se usa el limpiaparabrisas
+-marcha: sonido que hace siempre el motor del bus
+-musica: música de fondo
+-parada: Cuando se activa el botón de "parada solicitada" de arriba a la derecha
+-saludo1,2,3 y4: Corresponde a lo que debe sonar cuando el respectivo pasajeros1 a 4 sube al bus, debe sonar en el momento justo en donde hace el "bote" de entrar al bus". Cuando termine el audio debe sonar justo después el sonido "tarjeta.mp3"
+-puerta1: en la animación del boarding.
+-puerta2: cuando ingame se suelta a los pasajeros en la parada
+
+DAME LOS ARCHIVOS A MODIFICAR COMPLETOS SIN CAMBIAR NADA MÁS!!
