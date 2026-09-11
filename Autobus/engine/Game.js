@@ -12,9 +12,9 @@ export default class Game {
 
     this.isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || ('ontouchstart' in window);
 
-    // Resolución lógica virtual estándar 16:9 (se encuadra igual a la Imagen 2)
-    this.width = 1280;
-    this.height = 720;
+    // Resolución lógica virtual calibrada al tamaño exacto de la Imagen 2
+    this.width = 1536;
+    this.height = 864;
 
     this.bus = new Bus();
     this.controls = new Controls(this);
@@ -500,19 +500,17 @@ export default class Game {
   }
 
   resizeCanvas() {
-    // 1. Resolución virtual fija de 1280x720 (mantiene escala grande de la Imagen 2)
-    this.width = 1280;
-    this.height = 720;
+    // Escala calibrada a 1536x864 (reduce el tamaño respecto a 1280x720 e iguala la Imagen 2)
+    this.width = 1536;
+    this.height = 864;
 
     const windowWidth = window.innerWidth;
     const windowHeight = window.innerHeight;
 
-    // 2. Calcula escalado máximo ajustado al dispositivo manteniendo la relación 16:9
     const scale = Math.min(windowWidth / this.width, windowHeight / this.height);
     const displayWidth = Math.round(this.width * scale);
     const displayHeight = Math.round(this.height * scale);
 
-    // 3. Limita el DPR máximo a 2x para fluidez total en móviles
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
 
     this.canvas.width = this.width * dpr;
@@ -521,7 +519,6 @@ export default class Game {
     this.canvas.style.width = `${displayWidth}px`;
     this.canvas.style.height = `${displayHeight}px`;
 
-    // 4. Centrado dinámico en pantalla
     this.canvas.style.position = "absolute";
     this.canvas.style.left = `${(windowWidth - displayWidth) / 2}px`;
     this.canvas.style.top = `${(windowHeight - displayHeight) / 2}px`;
@@ -618,12 +615,12 @@ export default class Game {
   }
 
   getNewStopDistance() {
-    return 700 + Math.random() * 600;
+    return 850 + Math.random() * 700;
   }
 
   initStops() {
     this.busStops = [];
-    let currentX = 500;
+    let currentX = 600;
 
     const initialPassengers = this.getAvailablePassengers(1);
     if (initialPassengers.length > 0) {
@@ -649,8 +646,8 @@ export default class Game {
 
   initBuildings() {
     this.buildings = [];
-    let x = -50;
-    while (x < this.width + 300) {
+    let x = -100;
+    while (x < this.width + 500) {
       const scale = 0.85 + Math.random() * 0.55;
       const gap = -8 + Math.random() * 15;
 
@@ -675,15 +672,15 @@ export default class Game {
     const farolaW = 60, farolaH = 140;
     const papeleraW = 35, papeleraH = 50;
 
-    for (let x = 0; x < this.width + 600; x += this.farolaSpacing) {
+    for (let x = 0; x < this.width + 800; x += this.farolaSpacing) {
       this.streetProps.push({ x: x, type: "farola", width: farolaW, height: farolaH });
     }
 
-    for (let x = 150; x < this.width + 600; x += this.papeleraSpacing) {
+    for (let x = 150; x < this.width + 800; x += this.papeleraSpacing) {
       this.streetProps.push({ x: x, type: "papelera", width: papeleraW, height: papeleraH });
     }
 
-    for (let x = 60; x < this.width + 600; x += this.arbustoSpacing + (Math.random() * 125 - 50)) {
+    for (let x = 60; x < this.width + 800; x += this.arbustoSpacing + (Math.random() * 125 - 50)) {
       const scale = 0.65 + Math.random() * 0.6;
       this.streetProps.push({
         x: x,
@@ -701,7 +698,7 @@ export default class Game {
     this.clouds = [];
     for (let i = 0; i < 6; i++) {
       this.clouds.push({
-        x: Math.random() * (this.width + 200) - 50,
+        x: Math.random() * (this.width + 400) - 100,
         y: 10 + Math.random() * (this.height * 0.28),
         scale: 0.6 + Math.random() * 0.8,
         speed: 12 + Math.random() * 20,
@@ -925,8 +922,8 @@ export default class Game {
 
     this.clouds.forEach(cloud => {
       cloud.x -= (cloud.speed + this.bus.speed * 8) * dt;
-      if (cloud.x < -250) {
-        cloud.x = this.width + Math.random() * 200;
+      if (cloud.x < -400) {
+        cloud.x = this.width + Math.random() * 300;
         cloud.y = 10 + Math.random() * (this.height * 0.28);
         cloud.scale = 0.6 + Math.random() * 0.8;
       }
@@ -938,7 +935,7 @@ export default class Game {
 
     const maxX = Math.max(...this.buildings.map(b => b.x + b.width), this.width);
     this.buildings.forEach(b => {
-      if (b.x + b.width < -120) {
+      if (b.x + b.width < -300) {
         const gap = -8 + Math.random() * 15;
         b.scale = 0.85 + Math.random() * 0.55;
         b.x = maxX + gap;
@@ -958,7 +955,7 @@ export default class Game {
     const maxArbustoX = arbustos.length > 0 ? Math.max(...arbustos.map(a => a.x)) : this.width;
 
     this.streetProps.forEach(p => {
-      if (p.x < -180) {
+      if (p.x < -300) {
         if (p.type === "farola") p.x = maxFarolaX + this.farolaSpacing;
         if (p.type === "papelera") p.x = maxPapeleraX + this.papeleraSpacing;
         if (p.type === "arbusto") {
@@ -1041,7 +1038,8 @@ export default class Game {
     this.busStops.forEach(stop => stop.x -= this.bus.speed * factor);
 
     this.busStops.forEach(bs => {
-      if (bs.x <= -600) {
+      // Liberar pasajeros de paradas no atendidas únicamente al alejarse completamente (-1000px)
+      if (bs.x <= -1000) {
         if (bs.type === "PICKUP" && bs.passengers) {
           bs.passengers.forEach(p => {
             if (p.state === "WAITING") {
@@ -1052,11 +1050,12 @@ export default class Game {
       }
     });
 
-    this.obstacles = this.obstacles.filter(o => o.x > -250 && o.x < this.width + 500);
-    this.puddles = this.puddles.filter(p => p.x > -250 && p.x < this.width + 500);
-    this.trafficLights = this.trafficLights.filter(tl => tl.x > -250 && tl.x < this.width + 500);
-    this.busStops = this.busStops.filter(bs => bs.x > -600 && bs.x < this.width + 500);
-    this.trafficCars = this.trafficCars.filter(c => c.x > -250 && c.x < this.width + 500);
+    // Margen amplio de eliminación (-1000px) para evitar que desaparezcan dentro de la vista del usuario
+    this.obstacles = this.obstacles.filter(o => o.x > -1000 && o.x < this.width + 800);
+    this.puddles = this.puddles.filter(p => p.x > -1000 && p.x < this.width + 800);
+    this.trafficLights = this.trafficLights.filter(tl => tl.x > -1000 && tl.x < this.width + 800);
+    this.busStops = this.busStops.filter(bs => bs.x > -1000 && bs.x < this.width + 800);
+    this.trafficCars = this.trafficCars.filter(c => c.x > -1000 && c.x < this.width + 800);
   }
 
   emitSmoke(x, y, intensity = 1.0) {
