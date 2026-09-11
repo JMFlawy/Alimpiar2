@@ -176,7 +176,6 @@ export default class Bus {
 
         this.retrovisorImg = new Image();
 
-        this.scale = 1.0;
         this.setBusType(busType);
 
         this.passengerImages = {
@@ -247,22 +246,6 @@ export default class Bus {
         }
     }
 
-    updateScale(canvasWidth, canvasHeight, laneSpacing) {
-        if (!canvasWidth || !canvasHeight || !laneSpacing) return;
-        this.lastCanvasW = canvasWidth;
-        this.lastCanvasH = canvasHeight;
-        this.lastLaneSpacing = laneSpacing;
-
-        const scale = Math.min(laneSpacing / 130, canvasWidth / 950);
-        this.scale = scale;
-
-        this.width = this.baseWidth * scale;
-        this.height = this.baseHeight * scale;
-        this.offsetY = this.baseOffsetY * scale;
-        this.wheels.radius = this.baseWheelRadius * scale;
-        this.x = Math.max(20, 120 * scale);
-    }
-
     setBusType(busType) {
         this.busType = busType || "bus1";
         const baseName = this.busType.replace(/\d+$/, "");
@@ -292,10 +275,9 @@ export default class Bus {
         };
 
         if (this.busType.startsWith("busl")) {
-            this.baseWidth = 490;
-            this.baseHeight = 280;
-            this.baseOffsetY = -205;
-            this.baseWheelRadius = 33;
+            this.width = 490;
+            this.height = 280;
+            this.offsetY = -205;
 
             this.wheels = {
                 frontXRatio: 0.77,
@@ -331,10 +313,9 @@ export default class Bus {
             };
 
         } else {
-            this.baseWidth = 450;
-            this.baseHeight = 200;
-            this.baseOffsetY = -120;
-            this.baseWheelRadius = 30;
+            this.width = 450;
+            this.height = 200;
+            this.offsetY = -120;
 
             this.wheels = {
                 frontXRatio: 0.67,
@@ -368,14 +349,6 @@ export default class Bus {
                 offsetX: 2,
                 offsetY: 1
             };
-        }
-
-        if (this.lastCanvasW) {
-            this.updateScale(this.lastCanvasW, this.lastCanvasH, this.lastLaneSpacing);
-        } else {
-            this.width = this.baseWidth;
-            this.height = this.baseHeight;
-            this.offsetY = this.baseOffsetY;
         }
     }
 
@@ -436,14 +409,9 @@ export default class Bus {
         if (blockedForward && this.speed > 0) this.speed = 0;
         if (blockedReverse && this.speed < 0) this.speed = 0;
 
-        // Movimiento vertical suave e independiente de la tasa de refresco (FPS)
-        const lerpFactor = 1 - Math.pow(0.9, dt * 120);
-        this.y += (this.targetY - this.y) * lerpFactor;
-        if (Math.abs(this.targetY - this.y) < 0.1) {
-            this.y = this.targetY;
-        }
-
+        this.y += (this.targetY - this.y) * 0.035;
         this.wheelAngle += this.speed * 0.18;
+
         this.ledScrollOffset += dt * 40;
     }
 
@@ -487,9 +455,11 @@ export default class Bus {
             const textMetrics = ctx.measureText(text);
             const textWidth = textMetrics.width || 80;
 
+            // Distancia total a recorrer: desde que entra por la derecha hasta que sale por completo por la izquierda
             const totalDistance = panelW + textWidth;
             const currentOffset = this.ledScrollOffset % totalDistance;
 
+            // La posición X va desde panelX + panelW (extremo derecho) hasta panelX - textWidth (fuera por la izquierda)
             const drawX = panelX + panelW - currentOffset;
 
             ctx.fillText(text, drawX, panelY + panelH / 2);
@@ -502,11 +472,10 @@ export default class Bus {
         const windows = this.windows;
 
         const isLondonBus = this.busType.startsWith("busl");
-        const scale = this.scale || 1.0;
-        const cropLeft = (isLondonBus ? 0 : 3) * scale;
-        const cropTop = (isLondonBus ? 0 : 5) * scale;
-        const cropRight = (isLondonBus ? 0 : 3) * scale;
-        const cropBottom = (isLondonBus ? 0 : 4) * scale;
+        const cropLeft = isLondonBus ? 0 : 3;
+        const cropTop = isLondonBus ? 0 : 5;
+        const cropRight = isLondonBus ? 0 : 3;
+        const cropBottom = isLondonBus ? 0 : 4;
 
         windows.forEach((windowData, index) => {
             const winX = busX + busW * windowData.x;
@@ -545,7 +514,7 @@ export default class Bus {
                     const passengerW = passengerH * imageAspect;
                     const passengerX = winX + (winW - passengerW) / 2;
                     
-                    const offsetY = (isLondonBus ? 0 : 14) * scale;
+                    const offsetY = isLondonBus ? 0 : 14;
                     const passengerY = winY + winH * 0.02 + offsetY;
 
                     ctx.globalAlpha = 0.95;
@@ -730,9 +699,8 @@ export default class Bus {
     }
 
     render(ctx) {
-        const scale = this.scale || 1.0;
         const bounceY = Math.sin(performance.now() * 0.008) * (Math.abs(this.speed) * 0.10);
-        const topLaneOffset = (this.currentLane === 0) ? (-15 * scale) : 0;
+        const topLaneOffset = (this.currentLane === 0) ? -15 : 0;
         const renderY = this.y + this.offsetY + bounceY + topLaneOffset;
 
         ctx.fillStyle = "rgba(0, 0, 0, 0.35)";
@@ -741,7 +709,7 @@ export default class Bus {
             this.x + this.width * 0.5,
             renderY + this.height * 0.95,
             this.width * 0.48,
-            Math.max(3, 12 * scale),
+            12,
             0,
             0,
             Math.PI * 2
@@ -803,7 +771,7 @@ export default class Bus {
             ctx.fill();
 
             ctx.strokeStyle = "#000";
-            ctx.lineWidth = Math.max(0.8, 1.5 * scale);
+            ctx.lineWidth = 1.5;
             ctx.stroke();
 
             ctx.rotate(this.wheelAngle);
@@ -850,7 +818,7 @@ export default class Bus {
             ctx.fill();
 
             ctx.strokeStyle = "#000";
-            ctx.lineWidth = Math.max(0.5, 1 * scale);
+            ctx.lineWidth = 1;
             ctx.beginPath();
             ctx.arc(0, 0, radius * 0.25, 0, Math.PI * 2);
             ctx.stroke();
