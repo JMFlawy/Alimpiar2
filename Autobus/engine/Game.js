@@ -12,10 +12,6 @@ export default class Game {
 
     this.isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || ('ontouchstart' in window);
 
-    // Resolución lógica virtual calibrada al tamaño exacto de la Imagen 2
-    this.width = 1536;
-    this.height = 864;
-
     this.bus = new Bus();
     this.controls = new Controls(this);
 
@@ -39,6 +35,7 @@ export default class Game {
     this.soundParada = new Audio("sounds/parada.mp3");
     this.soundParada.volume = 0.6;
 
+    // Volumen de barro bajado al 15%
     this.soundBarro = new Audio("sounds/barro.mp3");
     this.soundBarro.volume = 0.15;
 
@@ -60,9 +57,10 @@ export default class Game {
     this.imgTerminado.src = "assets/terminado.png";
 
     this.isCompleted = false;
-    this.fadeAlpha = 0;
+    this.fadeAlpha = 0; // Control del difuminado a negro
     this.endTimerStarted = false;
 
+    // Cuando la música haga loop y vuelva a empezar, saltar de nuevo al segundo 2
     this.soundMusica.addEventListener("seeking", () => {
       if (this.soundMusica.currentTime < 2) {
         this.soundMusica.currentTime = 2;
@@ -77,6 +75,7 @@ export default class Game {
       new Audio("sounds/saludo5.wav")
     ];
 
+    // Estados internos para la reproducción de sonidos continuos
     this.isMarchaPlaying = false;
     this.isAtrasPlaying = false;
 
@@ -126,6 +125,7 @@ export default class Game {
       if (e.key === "Escape" || e.key === "Esc") {
         this.togglePause();
       }
+      // Limpiaparabrisas (Espacio)
       if (e.key === " " || e.code === "Space") {
         if (this.bus && this.bus.windshield && this.bus.windshield.splatters.length > 0) {
           this.soundLimpia.currentTime = 0;
@@ -177,6 +177,47 @@ export default class Game {
 
     video.play().catch(() => {
       finishIntro();
+    });
+  }
+
+  playFinalVideo() {
+    this.stopEngineSounds();
+    if (this.soundMusica) {
+      this.soundMusica.pause();
+    }
+
+    const video = document.createElement("video");
+    video.src = "assets/final.mp4";
+    video.autoplay = true;
+    video.playsInline = true;
+
+    Object.assign(video.style, {
+      position: "fixed",
+      top: "0",
+      left: "0",
+      width: "100vw",
+      height: "100dvh",
+      objectFit: "contain",
+      backgroundColor: "#000000",
+      zIndex: "20000",
+      cursor: "pointer"
+    });
+
+    let finished = false;
+    const finishFinal = () => {
+      if (finished) return;
+      finished = true;
+      video.remove();
+      this.resetGame();
+    };
+
+    video.addEventListener("ended", finishFinal);
+    video.addEventListener("click", finishFinal);
+
+    document.body.appendChild(video);
+
+    video.play().catch(() => {
+      finishFinal();
     });
   }
 
@@ -336,6 +377,7 @@ export default class Game {
     }
     this.isSelectingBus = false;
 
+    // Iniciar música de fondo con el volumen restaurado desde el segundo 2
     if (this.soundMusica) {
       this.soundMusica.volume = 0.51;
       this.soundMusica.currentTime = 2;
@@ -373,8 +415,8 @@ export default class Game {
     if (!this.isPaused || !this.pauseButtons) return;
 
     const rect = this.canvas.getBoundingClientRect();
-    const clickX = (e.clientX - rect.left) * (this.width / rect.width);
-    const clickY = (e.clientY - rect.top) * (this.height / rect.height);
+    const clickX = e.clientX - rect.left;
+    const clickY = e.clientY - rect.top;
 
     const btnResume = this.pauseButtons.resume;
     if (btnResume && clickX >= btnResume.x && clickX <= btnResume.x + btnResume.w &&
@@ -405,6 +447,7 @@ export default class Game {
     this.score = 0;
     this.scrollOffset = 0;
 
+    // Restaurar música de fondo continuamente al reiniciar el juego
     if (this.soundMusica) {
       this.soundMusica.volume = 0.51;
       if (this.soundMusica.paused) {
@@ -468,18 +511,29 @@ export default class Game {
         this.soundMusica.volume = 0.15;
       }
 
+      const launchFinalVideoSequence = () => {
+        if (!this.endTimerStarted) {
+          this.endTimerStarted = true;
+          setTimeout(() => {
+            this.playFinalVideo();
+          }, 3000);
+        }
+      };
+
       if (this.soundTerminado) {
         this.soundTerminado.currentTime = 0;
         this.soundTerminado.play().catch(() => {});
 
         this.soundTerminado.onended = () => {
-          if (!this.endTimerStarted) {
-            this.endTimerStarted = true;
-            setTimeout(() => {
-              this.startFadeToBlack();
-            }, 3000);
-          }
+          launchFinalVideoSequence();
         };
+
+        // Respaldo por si el evento de finalización del audio no salta
+        setTimeout(() => {
+          launchFinalVideoSequence();
+        }, 4000);
+      } else {
+        launchFinalVideoSequence();
       }
     }
   }
@@ -500,28 +554,14 @@ export default class Game {
   }
 
   resizeCanvas() {
-    // Escala calibrada a 1536x864 (reduce el tamaño respecto a 1280x720 e iguala la Imagen 2)
-    this.width = 1536;
-    this.height = 864;
-
-    const windowWidth = window.innerWidth;
-    const windowHeight = window.innerHeight;
-
-    const scale = Math.min(windowWidth / this.width, windowHeight / this.height);
-    const displayWidth = Math.round(this.width * scale);
-    const displayHeight = Math.round(this.height * scale);
-
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const dpr = window.devicePixelRatio || 1;
+    this.width = window.innerWidth;
+    this.height = window.innerHeight;
 
     this.canvas.width = this.width * dpr;
     this.canvas.height = this.height * dpr;
-
-    this.canvas.style.width = `${displayWidth}px`;
-    this.canvas.style.height = `${displayHeight}px`;
-
-    this.canvas.style.position = "absolute";
-    this.canvas.style.left = `${(windowWidth - displayWidth) / 2}px`;
-    this.canvas.style.top = `${(windowHeight - displayHeight) / 2}px`;
+    this.canvas.style.width = `${this.width}px`;
+    this.canvas.style.height = `${this.height}px`;
 
     this.ctx.resetTransform();
     this.ctx.scale(dpr, dpr);
@@ -615,12 +655,12 @@ export default class Game {
   }
 
   getNewStopDistance() {
-    return 850 + Math.random() * 700;
+    return 1400 + Math.random() * 1200;
   }
 
   initStops() {
     this.busStops = [];
-    let currentX = 600;
+    let currentX = 1000;
 
     const initialPassengers = this.getAvailablePassengers(1);
     if (initialPassengers.length > 0) {
@@ -628,7 +668,7 @@ export default class Game {
         x: currentX,
         type: "PICKUP",
         passengers: initialPassengers,
-        width: 150,
+        width: 300,
         processed: false
       });
     }
@@ -646,8 +686,8 @@ export default class Game {
 
   initBuildings() {
     this.buildings = [];
-    let x = -100;
-    while (x < this.width + 500) {
+    let x = -50;
+    while (x < this.width + 600) {
       const scale = 0.85 + Math.random() * 0.55;
       const gap = -8 + Math.random() * 15;
 
@@ -665,22 +705,22 @@ export default class Game {
 
   initStreetProps() {
     this.streetProps = [];
-    this.farolaSpacing = 510;
-    this.papeleraSpacing = 780;
-    this.arbustoSpacing = 240;
+    this.farolaSpacing = 1020;
+    this.papeleraSpacing = 1560;
+    this.arbustoSpacing = 480;
 
     const farolaW = 60, farolaH = 140;
     const papeleraW = 35, papeleraH = 50;
 
-    for (let x = 0; x < this.width + 800; x += this.farolaSpacing) {
+    for (let x = 0; x < this.width + 1200; x += this.farolaSpacing) {
       this.streetProps.push({ x: x, type: "farola", width: farolaW, height: farolaH });
     }
 
-    for (let x = 150; x < this.width + 800; x += this.papeleraSpacing) {
+    for (let x = 300; x < this.width + 1200; x += this.papeleraSpacing) {
       this.streetProps.push({ x: x, type: "papelera", width: papeleraW, height: papeleraH });
     }
 
-    for (let x = 60; x < this.width + 800; x += this.arbustoSpacing + (Math.random() * 125 - 50)) {
+    for (let x = 120; x < this.width + 1200; x += this.arbustoSpacing + (Math.random() * 250 - 100)) {
       const scale = 0.65 + Math.random() * 0.6;
       this.streetProps.push({
         x: x,
@@ -699,7 +739,7 @@ export default class Game {
     for (let i = 0; i < 6; i++) {
       this.clouds.push({
         x: Math.random() * (this.width + 400) - 100,
-        y: 10 + Math.random() * (this.height * 0.28),
+        y: 20 + Math.random() * (this.height * 0.28),
         scale: 0.6 + Math.random() * 0.8,
         speed: 12 + Math.random() * 20,
         opacity: 0.55 + Math.random() * 0.35
@@ -831,8 +871,12 @@ export default class Game {
       return;
     }
 
+    // Factor ajustado a la frecuencia de 120 Hz para velocidad óptima
     const factor = dt * 120;
 
+    // ==========================================
+    // CONTROL DE SONIDOS DE MARCHA Y MARCHA ATRÁS
+    // ==========================================
     const isGasPressed = this.controls.keys && this.controls.keys.gas;
     const isReversePressed = this.controls.keys && this.controls.keys.reverse;
 
@@ -922,9 +966,9 @@ export default class Game {
 
     this.clouds.forEach(cloud => {
       cloud.x -= (cloud.speed + this.bus.speed * 8) * dt;
-      if (cloud.x < -400) {
-        cloud.x = this.width + Math.random() * 300;
-        cloud.y = 10 + Math.random() * (this.height * 0.28);
+      if (cloud.x < -250) {
+        cloud.x = this.width + Math.random() * 200;
+        cloud.y = 20 + Math.random() * (this.height * 0.28);
         cloud.scale = 0.6 + Math.random() * 0.8;
       }
     });
@@ -935,7 +979,7 @@ export default class Game {
 
     const maxX = Math.max(...this.buildings.map(b => b.x + b.width), this.width);
     this.buildings.forEach(b => {
-      if (b.x + b.width < -300) {
+      if (b.x + b.width < -120) {
         const gap = -8 + Math.random() * 15;
         b.scale = 0.85 + Math.random() * 0.55;
         b.x = maxX + gap;
@@ -955,11 +999,11 @@ export default class Game {
     const maxArbustoX = arbustos.length > 0 ? Math.max(...arbustos.map(a => a.x)) : this.width;
 
     this.streetProps.forEach(p => {
-      if (p.x < -300) {
+      if (p.x < -180) {
         if (p.type === "farola") p.x = maxFarolaX + this.farolaSpacing;
         if (p.type === "papelera") p.x = maxPapeleraX + this.papeleraSpacing;
         if (p.type === "arbusto") {
-          p.x = maxArbustoX + this.arbustoSpacing + (Math.random() * 125 - 40);
+          p.x = maxArbustoX + this.arbustoSpacing + (Math.random() * 250 - 80);
           p.scale = 0.65 + Math.random() * 0.6;
           p.width = 75 * p.scale;
           p.height = 50 * p.scale;
@@ -1038,8 +1082,7 @@ export default class Game {
     this.busStops.forEach(stop => stop.x -= this.bus.speed * factor);
 
     this.busStops.forEach(bs => {
-      // Liberar pasajeros de paradas no atendidas únicamente al alejarse completamente (-1000px)
-      if (bs.x <= -1000) {
+      if (bs.x <= -1200) {
         if (bs.type === "PICKUP" && bs.passengers) {
           bs.passengers.forEach(p => {
             if (p.state === "WAITING") {
@@ -1050,12 +1093,11 @@ export default class Game {
       }
     });
 
-    // Margen amplio de eliminación (-1000px) para evitar que desaparezcan dentro de la vista del usuario
-    this.obstacles = this.obstacles.filter(o => o.x > -1000 && o.x < this.width + 800);
-    this.puddles = this.puddles.filter(p => p.x > -1000 && p.x < this.width + 800);
-    this.trafficLights = this.trafficLights.filter(tl => tl.x > -1000 && tl.x < this.width + 800);
-    this.busStops = this.busStops.filter(bs => bs.x > -1000 && bs.x < this.width + 800);
-    this.trafficCars = this.trafficCars.filter(c => c.x > -1000 && c.x < this.width + 800);
+    this.obstacles = this.obstacles.filter(o => o.x > -500 && o.x < this.width + 1000);
+    this.puddles = this.puddles.filter(p => p.x > -500 && p.x < this.width + 1000);
+    this.trafficLights = this.trafficLights.filter(tl => tl.x > -500 && tl.x < this.width + 1000);
+    this.busStops = this.busStops.filter(bs => bs.x > -1200 && bs.x < this.width + 1000);
+    this.trafficCars = this.trafficCars.filter(c => c.x > -500 && c.x < this.width + 1000);
   }
 
   emitSmoke(x, y, intensity = 1.0) {
