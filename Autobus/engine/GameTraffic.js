@@ -1,8 +1,7 @@
 export default class GameTraffic {
   static updateCarAI(game, car) {
     if (car.isChangingLane) {
-      const dtFactor = game.dtFactor || 1;
-      car.laneProgress += 0.025 * dtFactor;
+      car.laneProgress += 0.025;
 
       if (car.laneProgress >= 1.0) {
         car.laneProgress = 1.0;
@@ -182,7 +181,6 @@ export default class GameTraffic {
   static generateTrafficOrObstacle(game) {
     const activeCars = game.trafficCars.length;
     const spawnX = game.width + 100;
-    const scale = (game.bus && game.bus.scale) ? game.bus.scale : 1;
 
     const isLaneClearForSpawn = (laneIdx, minMargin = 380) => {
       const laneY = game.lanes[laneIdx];
@@ -215,8 +213,8 @@ export default class GameTraffic {
             const randomImg = availableImages[Math.floor(Math.random() * availableImages.length)];
             const isCochet = randomImg.src && randomImg.src.includes("cochet");
 
-            const carW = (isCochet ? 240 : 180) * scale;
-            const carH = (isCochet ? 110 : 100) * scale;
+            const carW = isCochet ? 240 : 180;
+            const carH = isCochet ? 110 : 100;
 
             const initialY = game.lanes[laneIdx];
 
@@ -275,11 +273,11 @@ export default class GameTraffic {
 
           game.obstacles.push({ 
             x: spawnXPos, 
-            y: game.lanes[laneIdx] + offsetY * scale, 
-            width: 32 * scale, 
-            height: 36 * scale,
+            y: game.lanes[laneIdx] + offsetY, 
+            width: 32, 
+            height: 36,
             laneIdx: laneIdx,
-            offsetY: offsetY * scale
+            offsetY: offsetY
           });
         }
       }
@@ -292,8 +290,8 @@ export default class GameTraffic {
         game.puddles.push({
           x: spawnXPos,
           y: game.lanes[laneIdx],
-          width: 110 * scale,
-          height: 40 * scale,
+          width: 110,
+          height: 40,
           splashed: false,
           laneIdx: laneIdx
         });
@@ -306,7 +304,7 @@ export default class GameTraffic {
 
     ctx.fillStyle = "rgba(0, 0, 0, 0.32)";
     ctx.beginPath();
-    ctx.ellipse(car.x + car.width * 0.5, car.y + (car.height * 0.28), car.width * 0.42, Math.max(2, car.height * 0.1), 0, 0, Math.PI * 2);
+    ctx.ellipse(car.x + car.width * 0.5, car.y + (car.height * 0.28), car.width * 0.42, 10, 0, 0, Math.PI * 2);
     ctx.fill();
 
     if (car.img && car.img.complete && car.img.naturalWidth > 0) {
