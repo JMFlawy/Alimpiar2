@@ -333,6 +333,12 @@ export default class Game {
   selectBus(busType) {
     if (this.bus) {
       this.bus.setBusType(busType);
+      const roadTop = this.height * 0.55;
+      const roadHeight = this.height * 0.42;
+      const laneSpacing = roadHeight / 3;
+      this.bus.updateScale(this.width, this.height, laneSpacing);
+      this.bus.targetY = this.lanes[this.bus.currentLane];
+      this.bus.y = this.bus.targetY;
     }
     this.isSelectingBus = false;
 
@@ -530,6 +536,7 @@ export default class Game {
     ];
 
     if (this.bus) {
+      this.bus.updateScale(this.width, this.height, laneSpacing);
       this.bus.targetY = this.lanes[this.bus.currentLane];
       this.bus.y = this.bus.targetY;
     }
@@ -821,6 +828,7 @@ export default class Game {
 
     // Factor ajustado a la frecuencia de 120 Hz para velocidad óptima
     const factor = dt * 120;
+    this.dtFactor = factor;
 
     // ==========================================
     // CONTROL DE SONIDOS DE MARCHA Y MARCHA ATRÁS
