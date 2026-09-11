@@ -12,6 +12,7 @@ export default class Game {
 
     this.isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || ('ontouchstart' in window);
 
+    this.scale = 1;
     this.bus = new Bus();
     this.controls = new Controls(this);
 
@@ -35,7 +36,6 @@ export default class Game {
     this.soundParada = new Audio("sounds/parada.mp3");
     this.soundParada.volume = 0.6;
 
-    // Volumen de barro bajado al 15%
     this.soundBarro = new Audio("sounds/barro.mp3");
     this.soundBarro.volume = 0.15;
 
@@ -57,10 +57,9 @@ export default class Game {
     this.imgTerminado.src = "assets/terminado.png";
 
     this.isCompleted = false;
-    this.fadeAlpha = 0; // Control del difuminado a negro
+    this.fadeAlpha = 0;
     this.endTimerStarted = false;
 
-    // Cuando la música haga loop y vuelva a empezar, saltar de nuevo al segundo 2
     this.soundMusica.addEventListener("seeking", () => {
       if (this.soundMusica.currentTime < 2) {
         this.soundMusica.currentTime = 2;
@@ -75,7 +74,6 @@ export default class Game {
       new Audio("sounds/saludo5.wav")
     ];
 
-    // Estados internos para la reproducción de sonidos continuos
     this.isMarchaPlaying = false;
     this.isAtrasPlaying = false;
 
@@ -125,7 +123,6 @@ export default class Game {
       if (e.key === "Escape" || e.key === "Esc") {
         this.togglePause();
       }
-      // Limpiaparabrisas (Espacio)
       if (e.key === " " || e.code === "Space") {
         if (this.bus && this.bus.windshield && this.bus.windshield.splatters.length > 0) {
           this.soundLimpia.currentTime = 0;
@@ -219,8 +216,8 @@ export default class Game {
         background: linear-gradient(145deg, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.98));
         border: 3px solid ${b.color};
         border-radius: 20px;
-        padding: 24px 18px;
-        width: 200px;
+        padding: 18px 14px;
+        width: 170px;
         display: flex;
         flex-direction: column;
         align-items: center;
@@ -229,50 +226,42 @@ export default class Game {
         transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
         box-shadow: 0 10px 25px -5px ${b.color}40, 0 8px 10px -6px rgba(0, 0, 0, 0.5);
         user-select: none;
-      "
-      onmouseover="
-        this.style.transform = 'translateY(-8px) scale(1.05)';
-        this.style.boxShadow = '0 20px 35px -5px ${b.color}88, 0 0 25px ${b.color}aa';
-      "
-      onmouseout="
-        this.style.transform = 'translateY(0) scale(1)';
-        this.style.boxShadow = '0 10px 25px -5px ${b.color}40, 0 8px 10px -6px rgba(0,0,0,0.5)';
       ">
         <div style="
           width: 100%;
-          height: 110px;
+          height: 90px;
           display: flex;
           align-items: center;
           justify-content: center;
         ">
           <img src="${b.img}" alt="${b.name}" style="
             max-width: 100%;
-            max-height: 100px;
+            max-height: 85px;
             object-fit: contain;
             filter: drop-shadow(0 10px 14px rgba(0,0,0,0.6));
           " />
         </div>
 
         <span style="
-          font-size: 18px;
+          font-size: 16px;
           font-weight: 800;
-          margin-top: 16px;
+          margin-top: 12px;
           color: #ffffff;
           text-align: center;
-          line-height: 1.25;
+          line-height: 1.2;
           text-shadow: 0 2px 4px rgba(0,0,0,0.8);
         ">${b.name}</span>
 
         <button style="
-          margin-top: 18px;
+          margin-top: 14px;
           width: 100%;
           background: ${b.color};
           color: #0f172a;
           border: none;
-          padding: 10px 0;
+          padding: 8px 0;
           border-radius: 12px;
           font-weight: 800;
-          font-size: 14px;
+          font-size: 13px;
           text-transform: uppercase;
           letter-spacing: 0.5px;
           cursor: pointer;
@@ -285,24 +274,24 @@ export default class Game {
     `).join("");
 
     menuOverlay.innerHTML = `
-      <div style="text-align: center; margin-bottom: 35px;">
+      <div style="text-align: center; margin-bottom: 20px;">
         <h1 style="
           margin: 0;
-          font-size: 36px;
+          font-size: 28px;
           font-weight: 900;
           letter-spacing: -0.5px;
           text-shadow: 0 4px 20px rgba(0,0,0,0.8);
           display: flex;
           align-items: center;
           justify-content: center;
-          gap: 14px;
+          gap: 10px;
         ">
-          <span style="font-size: 42px;">🚌</span> SELECCIONA TU AUTOBÚS
+          <span>🚌</span> SELECCIONA TU AUTOBÚS
         </h1>
         <p style="
-          margin: 10px 0 0 0;
+          margin: 6px 0 0 0;
           color: #94a3b8;
-          font-size: 18px;
+          font-size: 15px;
           font-weight: 500;
         ">Elige tu vehículo para comenzar el recorrido</p>
       </div>
@@ -310,9 +299,9 @@ export default class Game {
       <div style="
         display: flex;
         flex-wrap: wrap;
-        gap: 24px;
+        gap: 16px;
         justify-content: center;
-        max-width: 1150px;
+        max-width: 1100px;
         width: 100%;
       ">
         ${cardsHtml}
@@ -333,16 +322,9 @@ export default class Game {
   selectBus(busType) {
     if (this.bus) {
       this.bus.setBusType(busType);
-      const roadTop = this.height * 0.55;
-      const roadHeight = this.height * 0.42;
-      const laneSpacing = roadHeight / 3;
-      this.bus.updateScale(this.width, this.height, laneSpacing);
-      this.bus.targetY = this.lanes[this.bus.currentLane];
-      this.bus.y = this.bus.targetY;
     }
     this.isSelectingBus = false;
 
-    // Iniciar música de fondo con el volumen restaurado desde el segundo 2
     if (this.soundMusica) {
       this.soundMusica.volume = 0.51;
       this.soundMusica.currentTime = 2;
@@ -380,8 +362,8 @@ export default class Game {
     if (!this.isPaused || !this.pauseButtons) return;
 
     const rect = this.canvas.getBoundingClientRect();
-    const clickX = e.clientX - rect.left;
-    const clickY = e.clientY - rect.top;
+    const clickX = (e.clientX - rect.left) / (this.scale || 1);
+    const clickY = (e.clientY - rect.top) / (this.scale || 1);
 
     const btnResume = this.pauseButtons.resume;
     if (btnResume && clickX >= btnResume.x && clickX <= btnResume.x + btnResume.w &&
@@ -412,7 +394,6 @@ export default class Game {
     this.score = 0;
     this.scrollOffset = 0;
 
-    // Restaurar música de fondo continuamente al reiniciar el juego
     if (this.soundMusica) {
       this.soundMusica.volume = 0.51;
       if (this.soundMusica.paused) {
@@ -509,16 +490,25 @@ export default class Game {
 
   resizeCanvas() {
     const dpr = window.devicePixelRatio || 1;
-    this.width = window.innerWidth;
-    this.height = window.innerHeight;
+    const screenWidth = window.innerWidth;
+    const screenHeight = window.innerHeight;
 
-    this.canvas.width = this.width * dpr;
-    this.canvas.height = this.height * dpr;
-    this.canvas.style.width = `${this.width}px`;
-    this.canvas.style.height = `${this.height}px`;
+    // Altura lógica de referencia idéntica al ordenador (1080px)
+    const BASE_HEIGHT = 1080;
+    this.scale = screenHeight / BASE_HEIGHT;
 
+    // Dimensiones virtuales adaptadas manteniendo el ratio exacto
+    this.width = screenWidth / this.scale;
+    this.height = BASE_HEIGHT;
+
+    this.canvas.width = screenWidth * dpr;
+    this.canvas.height = screenHeight * dpr;
+    this.canvas.style.width = `${screenWidth}px`;
+    this.canvas.style.height = `${screenHeight}px`;
+
+    // Escala global uniforme en todo el contexto
     this.ctx.resetTransform();
-    this.ctx.scale(dpr, dpr);
+    this.ctx.scale(dpr * this.scale, dpr * this.scale);
 
     this.ctx.imageSmoothingEnabled = true;
     this.ctx.imageSmoothingQuality = "high";
@@ -536,7 +526,6 @@ export default class Game {
     ];
 
     if (this.bus) {
-      this.bus.updateScale(this.width, this.height, laneSpacing);
       this.bus.targetY = this.lanes[this.bus.currentLane];
       this.bus.y = this.bus.targetY;
     }
@@ -826,13 +815,8 @@ export default class Game {
       return;
     }
 
-    // Factor ajustado a la frecuencia de 120 Hz para velocidad óptima
     const factor = dt * 120;
-    this.dtFactor = factor;
 
-    // ==========================================
-    // CONTROL DE SONIDOS DE MARCHA Y MARCHA ATRÁS
-    // ==========================================
     const isGasPressed = this.controls.keys && this.controls.keys.gas;
     const isReversePressed = this.controls.keys && this.controls.keys.reverse;
 
