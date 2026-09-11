@@ -12,9 +12,9 @@ export default class Game {
 
     this.isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || ('ontouchstart' in window);
 
-    // Dimensiones virtuales fijas (2560x1440)
-    this.width = 2560;
-    this.height = 1440;
+    // Resolución lógica virtual estándar 16:9 (se encuadra igual a la Imagen 2)
+    this.width = 1280;
+    this.height = 720;
 
     this.bus = new Bus();
     this.controls = new Controls(this);
@@ -373,7 +373,6 @@ export default class Game {
     if (!this.isPaused || !this.pauseButtons) return;
 
     const rect = this.canvas.getBoundingClientRect();
-    // Mapeo preciso de clics táctiles/ratón al lienzo lógico 2560x1440
     const clickX = (e.clientX - rect.left) * (this.width / rect.width);
     const clickY = (e.clientY - rect.top) * (this.height / rect.height);
 
@@ -501,29 +500,28 @@ export default class Game {
   }
 
   resizeCanvas() {
-    // Resolución lógica fija equivalente a un monitor de 2560x1440
-    this.width = 2560;
-    this.height = 1440;
+    // 1. Resolución virtual fija de 1280x720 (mantiene escala grande de la Imagen 2)
+    this.width = 1280;
+    this.height = 720;
 
     const windowWidth = window.innerWidth;
     const windowHeight = window.innerHeight;
 
-    // Calcula escala uniforme manteniendo la relación de aspecto 16:9 exacta
+    // 2. Calcula escalado máximo ajustado al dispositivo manteniendo la relación 16:9
     const scale = Math.min(windowWidth / this.width, windowHeight / this.height);
     const displayWidth = Math.round(this.width * scale);
     const displayHeight = Math.round(this.height * scale);
 
-    const dpr = window.devicePixelRatio || 1;
+    // 3. Limita el DPR máximo a 2x para fluidez total en móviles
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
 
-    // Buffer de renderizado en alta definición
     this.canvas.width = this.width * dpr;
     this.canvas.height = this.height * dpr;
 
-    // Dimensiones en pantalla (CSS)
     this.canvas.style.width = `${displayWidth}px`;
     this.canvas.style.height = `${displayHeight}px`;
 
-    // Centrado perfecto en la pantalla para cualquier dispositivo u orientación
+    // 4. Centrado dinámico en pantalla
     this.canvas.style.position = "absolute";
     this.canvas.style.left = `${(windowWidth - displayWidth) / 2}px`;
     this.canvas.style.top = `${(windowHeight - displayHeight) / 2}px`;
@@ -620,12 +618,12 @@ export default class Game {
   }
 
   getNewStopDistance() {
-    return 1400 + Math.random() * 1200;
+    return 700 + Math.random() * 600;
   }
 
   initStops() {
     this.busStops = [];
-    let currentX = 1000;
+    let currentX = 500;
 
     const initialPassengers = this.getAvailablePassengers(1);
     if (initialPassengers.length > 0) {
@@ -633,7 +631,7 @@ export default class Game {
         x: currentX,
         type: "PICKUP",
         passengers: initialPassengers,
-        width: 300,
+        width: 150,
         processed: false
       });
     }
@@ -652,7 +650,7 @@ export default class Game {
   initBuildings() {
     this.buildings = [];
     let x = -50;
-    while (x < this.width + 600) {
+    while (x < this.width + 300) {
       const scale = 0.85 + Math.random() * 0.55;
       const gap = -8 + Math.random() * 15;
 
@@ -670,22 +668,22 @@ export default class Game {
 
   initStreetProps() {
     this.streetProps = [];
-    this.farolaSpacing = 1020;
-    this.papeleraSpacing = 1560;
-    this.arbustoSpacing = 480;
+    this.farolaSpacing = 510;
+    this.papeleraSpacing = 780;
+    this.arbustoSpacing = 240;
 
     const farolaW = 60, farolaH = 140;
     const papeleraW = 35, papeleraH = 50;
 
-    for (let x = 0; x < this.width + 1200; x += this.farolaSpacing) {
+    for (let x = 0; x < this.width + 600; x += this.farolaSpacing) {
       this.streetProps.push({ x: x, type: "farola", width: farolaW, height: farolaH });
     }
 
-    for (let x = 300; x < this.width + 1200; x += this.papeleraSpacing) {
+    for (let x = 150; x < this.width + 600; x += this.papeleraSpacing) {
       this.streetProps.push({ x: x, type: "papelera", width: papeleraW, height: papeleraH });
     }
 
-    for (let x = 120; x < this.width + 1200; x += this.arbustoSpacing + (Math.random() * 250 - 100)) {
+    for (let x = 60; x < this.width + 600; x += this.arbustoSpacing + (Math.random() * 125 - 50)) {
       const scale = 0.65 + Math.random() * 0.6;
       this.streetProps.push({
         x: x,
@@ -703,8 +701,8 @@ export default class Game {
     this.clouds = [];
     for (let i = 0; i < 6; i++) {
       this.clouds.push({
-        x: Math.random() * (this.width + 400) - 100,
-        y: 20 + Math.random() * (this.height * 0.28),
+        x: Math.random() * (this.width + 200) - 50,
+        y: 10 + Math.random() * (this.height * 0.28),
         scale: 0.6 + Math.random() * 0.8,
         speed: 12 + Math.random() * 20,
         opacity: 0.55 + Math.random() * 0.35
@@ -929,7 +927,7 @@ export default class Game {
       cloud.x -= (cloud.speed + this.bus.speed * 8) * dt;
       if (cloud.x < -250) {
         cloud.x = this.width + Math.random() * 200;
-        cloud.y = 20 + Math.random() * (this.height * 0.28);
+        cloud.y = 10 + Math.random() * (this.height * 0.28);
         cloud.scale = 0.6 + Math.random() * 0.8;
       }
     });
@@ -964,7 +962,7 @@ export default class Game {
         if (p.type === "farola") p.x = maxFarolaX + this.farolaSpacing;
         if (p.type === "papelera") p.x = maxPapeleraX + this.papeleraSpacing;
         if (p.type === "arbusto") {
-          p.x = maxArbustoX + this.arbustoSpacing + (Math.random() * 250 - 80);
+          p.x = maxArbustoX + this.arbustoSpacing + (Math.random() * 125 - 40);
           p.scale = 0.65 + Math.random() * 0.6;
           p.width = 75 * p.scale;
           p.height = 50 * p.scale;
@@ -1043,7 +1041,7 @@ export default class Game {
     this.busStops.forEach(stop => stop.x -= this.bus.speed * factor);
 
     this.busStops.forEach(bs => {
-      if (bs.x <= -1200) {
+      if (bs.x <= -600) {
         if (bs.type === "PICKUP" && bs.passengers) {
           bs.passengers.forEach(p => {
             if (p.state === "WAITING") {
@@ -1054,11 +1052,11 @@ export default class Game {
       }
     });
 
-    this.obstacles = this.obstacles.filter(o => o.x > -500 && o.x < this.width + 1000);
-    this.puddles = this.puddles.filter(p => p.x > -500 && p.x < this.width + 1000);
-    this.trafficLights = this.trafficLights.filter(tl => tl.x > -500 && tl.x < this.width + 1000);
-    this.busStops = this.busStops.filter(bs => bs.x > -1200 && bs.x < this.width + 1000);
-    this.trafficCars = this.trafficCars.filter(c => c.x > -500 && c.x < this.width + 1000);
+    this.obstacles = this.obstacles.filter(o => o.x > -250 && o.x < this.width + 500);
+    this.puddles = this.puddles.filter(p => p.x > -250 && p.x < this.width + 500);
+    this.trafficLights = this.trafficLights.filter(tl => tl.x > -250 && tl.x < this.width + 500);
+    this.busStops = this.busStops.filter(bs => bs.x > -600 && bs.x < this.width + 500);
+    this.trafficCars = this.trafficCars.filter(c => c.x > -250 && c.x < this.width + 500);
   }
 
   emitSmoke(x, y, intensity = 1.0) {
