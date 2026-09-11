@@ -43,6 +43,9 @@ export default class Game {
     this.cameraX = 0;
     this.keys = {};
 
+    // Control de tiempo para FPS independientes
+    this.lastTime = 0;
+
     // Módulos auxiliares
     this.effects = new EffectsManager(this);
     this.truckManager = new TruckSequence(this);
@@ -272,8 +275,23 @@ export default class Game {
     }
   }
 
-  start() { requestAnimationFrame(this.loop.bind(this)); }
-  loop() { this.updateGamepadState(); this.update(); this.draw(); requestAnimationFrame(this.loop.bind(this)); }
+  start() {
+    this.lastTime = performance.now();
+    requestAnimationFrame(this.loop.bind(this));
+  }
+
+  loop(now) {
+    if (!this.lastTime) this.lastTime = now;
+    
+    // Cálculo de Delta Time limitado a un máximo de 0.1s para evitar saltos
+    const dt = Math.min((now - this.lastTime) / 1000, 0.1);
+    this.lastTime = now;
+
+    this.updateGamepadState();
+    this.update(dt);
+    this.draw();
+    requestAnimationFrame(this.loop.bind(this));
+  }
 
   updateGamepadState() {
     if (!navigator.getGamepads) return;
@@ -337,8 +355,11 @@ export default class Game {
   playRandomSound(list) { const a = list[Math.floor(Math.random() * list.length)]; a.currentTime = 0; a.play().catch(()=>{}); }
   isActionPressed() { return !!this.keys["Control"] || (!!this.gamepadButtons["X"] && !this.prevGamepadButtons["X"]); }
 
-  update() {
+  update(dt = 0.016) {
     if (this.showIntroVideo || this.showStartScreen || this.isPaused) return;
+
+    // Factor normalizador basado en 60 FPS
+    const dtFactor = dt * 60;
 
     if (this.gamepad) {
       this.keys["ArrowUp"] = !!this.gamepadButtons["A"];
@@ -347,18 +368,20 @@ export default class Game {
     }
 
     if (this.sequenceFinished) {
-      if (this.fadeToBlack && this.fadeAlpha < 1) this.fadeAlpha = Math.min(1, this.fadeAlpha + 0.012);
+      if (this.fadeToBlack && this.fadeAlpha < 1) {
+        this.fadeAlpha = Math.min(1, this.fadeAlpha + 0.012 * dtFactor);
+      }
       return;
     }
 
-    this.effects.update();
-    this.truckManager.update();
+    this.effects.update(dtFactor);
+    this.truckManager.update(dtFactor);
 
     // FILTRAR PLATAFORMAS: Solo existen fuera de la casa
     const activePlatforms = this.scene === "outside" ? this.platforms : [];
 
     if (this.effects.sceneTransition.active) {
-      this.player.update({}, this.worldWidth, this.groundY, activePlatforms);
+      this.player.update({}, this.worldWidth, this.groundY, activePlatforms, dtFactor);
       this.clampPlayerInside();
       this.updateCamera();
       return;
@@ -373,7 +396,7 @@ export default class Game {
     }
 
     if (this.talkFrozen) {
-      this.player.update({}, this.worldWidth, this.groundY, activePlatforms);
+      this.player.update({}, this.worldWidth, this.groundY, activePlatforms, dtFactor);
       this.clampPlayerInside();
       this.updateCamera();
       this.lastActionPressed = actionPressed;
@@ -399,14 +422,14 @@ export default class Game {
 
     // Actualización del personaje
     if (this.truckSequenceStarted) {
-      this.player.update(this.keys, this.worldWidth, this.groundY, activePlatforms);
+      this.player.update(this.keys, this.worldWidth, this.groundY, activePlatforms, dtFactor);
       if (!this.keys["ArrowLeft"] && !this.keys["ArrowRight"]) {
         this.player.setAnimation("see");
       }
     } else if (this.gameOver) {
-      this.player.update({}, this.worldWidth, this.groundY, activePlatforms);
+      this.player.update({}, this.worldWidth, this.groundY, activePlatforms, dtFactor);
     } else {
-      this.player.update(this.keys, this.worldWidth, this.groundY, activePlatforms);
+      this.player.update(this.keys, this.worldWidth, this.groundY, activePlatforms, dtFactor);
     }
 
     this.clampPlayerInside();
