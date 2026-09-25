@@ -120,7 +120,7 @@ export default class Game {
 
     this.resizeCanvas();
     window.addEventListener("resize", () => this.resizeCanvas());
-    window.addEventListener("orientationchange", () => setTimeout(() => this.resizeCanvas(), 200));
+    window.addEventListener("orientationchange", () => setTimeout(() => this.resizeCanvas(), 150));
 
     window.addEventListener("keydown", (e) => {
       if (e.key === "Escape" || e.key === "Esc") {
@@ -210,7 +210,6 @@ export default class Game {
     menuOverlay.style.boxSizing = "border-box";
     menuOverlay.style.overflowY = "auto";
 
-    // Inyección de estilos responsivos adaptados a PC y Mobile
     let styleSheet = document.getElementById("bus-menu-styles");
     if (!styleSheet) {
       styleSheet = document.createElement("style");
@@ -423,7 +422,6 @@ export default class Game {
     this.score = 0;
     this.scrollOffset = 0;
 
-    // Restaurar música de fondo continuamente al reiniciar el juego
     if (this.soundMusica) {
       this.soundMusica.volume = 0.51;
       if (this.soundMusica.paused) {
@@ -534,22 +532,53 @@ export default class Game {
     this.ctx.imageSmoothingEnabled = true;
     this.ctx.imageSmoothingQuality = "high";
 
-    // Factor de escala relativo a la altura de referencia (720px PC estándar)
-    // En PC (~700p - 1080p) la escala es ~1.0, manteniendo las proporciones intactas.
-    // En móvil ajusta proporcionalmente la escala de los elementos.
-    this.scale = Math.min(Math.max(this.height / 720, 0.55), 1.4);
-
     const oldLanes = this.lanes ? [...this.lanes] : null;
 
-    const roadTop = this.height * 0.55;
-    const roadHeight = this.height * 0.42;
-    const laneSpacing = roadHeight / 3;
+    // Detectar si el dispositivo es un móvil/tablet táctil
+    const isMobileDevice = this.isMobile || (this.width < 1024 && ('ontouchstart' in window || navigator.maxTouchPoints > 0));
 
-    this.lanes = [
-      roadTop + laneSpacing * 0.35,
-      roadTop + laneSpacing * 1.35,
-      roadTop + laneSpacing * 2.35
-    ];
+    // ==========================================
+    // CÁLCULO RESPONSIVO Y PROPORCIONES
+    // ==========================================
+    if (!isMobileDevice && this.width >= this.height) {
+      // 1. MODO PC / DESKTOP (100% INTACTO ORIGINAL)
+      this.scale = 1.0;
+      const roadTop = this.height * 0.55;
+      const roadHeight = this.height * 0.42;
+      const laneSpacing = roadHeight / 3;
+
+      this.lanes = [
+        roadTop + laneSpacing * 0.35,
+        roadTop + laneSpacing * 1.35,
+        roadTop + laneSpacing * 2.35
+      ];
+    } else if (this.width >= this.height) {
+      // 2. MODO MÓVIL HORIZONTAL (LANDSCAPE)
+      // Escala estricta ligada a los 720px de altura de referencia
+      this.scale = Math.min(Math.max(this.height / 720, 0.38), 0.68);
+      const roadTop = this.height * 0.52;
+      const roadHeight = this.height * 0.44;
+      const laneSpacing = roadHeight / 3;
+
+      this.lanes = [
+        roadTop + laneSpacing * 0.35,
+        roadTop + laneSpacing * 1.35,
+        roadTop + laneSpacing * 2.35
+      ];
+    } else {
+      // 3. MODO MÓVIL VERTICAL (PORTRAIT)
+      // Escala ligada al ancho para evitar que el bus ocupe toda la pantalla
+      this.scale = Math.min(Math.max(this.width / 900, 0.35), 0.55);
+      const effectiveRoadHeight = Math.min(this.height * 0.35, this.width * 0.5);
+      const roadTop = this.height - effectiveRoadHeight - (this.height * 0.05);
+      const laneSpacing = effectiveRoadHeight / 3;
+
+      this.lanes = [
+        roadTop + laneSpacing * 0.35,
+        roadTop + laneSpacing * 1.35,
+        roadTop + laneSpacing * 2.35
+      ];
+    }
 
     if (this.bus) {
       this.bus.targetY = this.lanes[this.bus.currentLane];
@@ -841,12 +870,8 @@ export default class Game {
       return;
     }
 
-    // Factor ajustado a la frecuencia de 120 Hz para velocidad óptima
     const factor = dt * 120;
 
-    // ==========================================
-    // CONTROL DE SONIDOS DE MARCHA Y MARCHA ATRÁS
-    // ==========================================
     const isGasPressed = this.controls.keys && this.controls.keys.gas;
     const isReversePressed = this.controls.keys && this.controls.keys.reverse;
 
