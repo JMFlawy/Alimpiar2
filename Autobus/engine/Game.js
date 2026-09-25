@@ -180,47 +180,6 @@ export default class Game {
     });
   }
 
-  playFinalVideo() {
-    this.stopEngineSounds();
-    if (this.soundMusica) {
-      this.soundMusica.pause();
-    }
-
-    const video = document.createElement("video");
-    video.src = "assets/final.mp4";
-    video.autoplay = true;
-    video.playsInline = true;
-
-    Object.assign(video.style, {
-      position: "fixed",
-      top: "0",
-      left: "0",
-      width: "100vw",
-      height: "100dvh",
-      objectFit: "contain",
-      backgroundColor: "#000000",
-      zIndex: "20000",
-      cursor: "pointer"
-    });
-
-    let finished = false;
-    const finishFinal = () => {
-      if (finished) return;
-      finished = true;
-      video.remove();
-      this.resetGame();
-    };
-
-    video.addEventListener("ended", finishFinal);
-    video.addEventListener("click", finishFinal);
-
-    document.body.appendChild(video);
-
-    video.play().catch(() => {
-      finishFinal();
-    });
-  }
-
   showBusMenu() {
     this.isSelectingBus = true;
 
@@ -511,29 +470,18 @@ export default class Game {
         this.soundMusica.volume = 0.15;
       }
 
-      const launchFinalVideoSequence = () => {
-        if (!this.endTimerStarted) {
-          this.endTimerStarted = true;
-          setTimeout(() => {
-            this.playFinalVideo();
-          }, 3000);
-        }
-      };
-
       if (this.soundTerminado) {
         this.soundTerminado.currentTime = 0;
         this.soundTerminado.play().catch(() => {});
 
         this.soundTerminado.onended = () => {
-          launchFinalVideoSequence();
+          if (!this.endTimerStarted) {
+            this.endTimerStarted = true;
+            setTimeout(() => {
+              this.startFadeToBlack();
+            }, 3000);
+          }
         };
-
-        // Respaldo por si el evento de finalización del audio no salta
-        setTimeout(() => {
-          launchFinalVideoSequence();
-        }, 4000);
-      } else {
-        launchFinalVideoSequence();
       }
     }
   }
