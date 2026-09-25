@@ -127,6 +127,13 @@ export default class Game {
       if (e.key === "Escape" || e.key === "Esc") {
         this.togglePause();
       }
+
+      // Combinación Control + R para saltar directamente al final del juego
+      if ((e.ctrlKey || e.metaKey) && (e.key === "r" || e.key === "R")) {
+        e.preventDefault();
+        this.forceGameCompletion();
+      }
+
       // Limpiaparabrisas (Espacio)
       if (e.key === " " || e.code === "Space") {
         if (this.bus && this.bus.windshield && this.bus.windshield.splatters.length > 0) {
@@ -182,6 +189,67 @@ export default class Game {
     video.play().catch(() => {
       finishIntro();
     });
+  }
+
+  playFinalVideo() {
+    this.stopEngineSounds();
+    if (this.soundMusica) this.soundMusica.pause();
+    if (this.soundTerminado) this.soundTerminado.pause();
+
+    const video = document.createElement("video");
+    video.src = "assets/final.mp4";
+    video.autoplay = true;
+    video.playsInline = true;
+    video.setAttribute("playsinline", "");
+    video.setAttribute("webkit-playsinline", "");
+
+    Object.assign(video.style, {
+      position: "fixed",
+      top: "0",
+      left: "0",
+      width: "100vw",
+      height: "100dvh",
+      objectFit: "contain",
+      backgroundColor: "#000000",
+      zIndex: "20000",
+      cursor: "pointer"
+    });
+
+    let finished = false;
+    const finishFinal = () => {
+      if (finished) return;
+      finished = true;
+      video.remove();
+      if (this.onGoToMenu) {
+        this.onGoToMenu();
+      } else {
+        this.resetGame();
+      }
+    };
+
+    video.addEventListener("ended", finishFinal);
+    video.addEventListener("click", finishFinal);
+
+    document.body.appendChild(video);
+
+    video.play().catch(() => {
+      finishFinal();
+    });
+  }
+
+  forceGameCompletion() {
+    if (this.isCompleted || this.isSelectingBus) return;
+
+    // Marcar todos los pasajeros como entregados y vaciar el autobús
+    this.passengersPool.forEach(p => p.state = "DELIVERED");
+    if (this.bus) {
+      this.bus.passengers = [];
+    }
+
+    // Despausar si estaba en pausa para que progrese la animación de fin
+    this.isPaused = false;
+
+    this.checkAllPassengersCompleted();
   }
 
   showBusMenu() {
@@ -509,11 +577,7 @@ export default class Game {
       if (this.fadeAlpha >= 1) {
         this.fadeAlpha = 1;
         clearInterval(fadeInterval);
-        if (this.onGoToMenu) {
-          this.onGoToMenu();
-        } else {
-          this.resetGame();
-        }
+        this.playFinalVideo();
       }
     }, 50);
   }
@@ -528,7 +592,7 @@ export default class Game {
     const oldLanes = this.lanes ? [...this.lanes] : null;
 
     if (!isMobileDevice && realWidth >= realHeight) {
-      // 1. MODO PC / DESKTOP (100% INTACTO ORIGINAL)
+      // 1. MODO PC / DESKTOP
       this.scale = 1.0;
       this.offsetY = 0;
       this.width = realWidth;
@@ -545,7 +609,6 @@ export default class Game {
       ];
     } else if (realWidth >= realHeight) {
       // 2. MODO MÓVIL HORIZONTAL (LANDSCAPE)
-      // Mantener 100% intacto como salía hasta ahora
       this.scale = realHeight / 720;
       this.offsetY = 0;
       this.width = realWidth / this.scale;
@@ -562,7 +625,6 @@ export default class Game {
       ];
     } else {
       // 3. MODO MÓVIL VERTICAL (PORTRAIT)
-      // Visualización horizontal estilo PC con franjas negras arriba y abajo
       this.height = 720;
       this.width = 1280;
       this.scale = realWidth / this.width;
