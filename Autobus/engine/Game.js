@@ -12,6 +12,13 @@ export default class Game {
 
     this.isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || ('ontouchstart' in window);
 
+    // Resolución virtual fija estándar para mantener proporciones en todos los dispositivos
+    this.width = 1280;
+    this.height = 720;
+    this.scale = 1;
+    this.offsetX = 0;
+    this.offsetY = 0;
+
     this.bus = new Bus();
     this.controls = new Controls(this);
 
@@ -35,7 +42,6 @@ export default class Game {
     this.soundParada = new Audio("sounds/parada.mp3");
     this.soundParada.volume = 0.6;
 
-    // Volumen de barro bajado al 15%
     this.soundBarro = new Audio("sounds/barro.mp3");
     this.soundBarro.volume = 0.15;
 
@@ -57,10 +63,9 @@ export default class Game {
     this.imgTerminado.src = "assets/terminado.png";
 
     this.isCompleted = false;
-    this.fadeAlpha = 0; // Control del difuminado a negro
+    this.fadeAlpha = 0;
     this.endTimerStarted = false;
 
-    // Cuando la música haga loop y vuelva a empezar, saltar de nuevo al segundo 2
     this.soundMusica.addEventListener("seeking", () => {
       if (this.soundMusica.currentTime < 2) {
         this.soundMusica.currentTime = 2;
@@ -75,7 +80,6 @@ export default class Game {
       new Audio("sounds/saludo5.wav")
     ];
 
-    // Estados internos para la reproducción de sonidos continuos
     this.isMarchaPlaying = false;
     this.isAtrasPlaying = false;
 
@@ -125,7 +129,6 @@ export default class Game {
       if (e.key === "Escape" || e.key === "Esc") {
         this.togglePause();
       }
-      // Limpiaparabrisas (Espacio)
       if (e.key === " " || e.code === "Space") {
         if (this.bus && this.bus.windshield && this.bus.windshield.splatters.length > 0) {
           this.soundLimpia.currentTime = 0;
@@ -336,7 +339,6 @@ export default class Game {
     }
     this.isSelectingBus = false;
 
-    // Iniciar música de fondo con el volumen restaurado desde el segundo 2
     if (this.soundMusica) {
       this.soundMusica.volume = 0.51;
       this.soundMusica.currentTime = 2;
@@ -374,8 +376,12 @@ export default class Game {
     if (!this.isPaused || !this.pauseButtons) return;
 
     const rect = this.canvas.getBoundingClientRect();
-    const clickX = e.clientX - rect.left;
-    const clickY = e.clientY - rect.top;
+    const rawX = e.clientX - rect.left;
+    const rawY = e.clientY - rect.top;
+
+    // Transformar clics en pantalla al espacio del lienzo virtual 1280x720
+    const clickX = (rawX - this.offsetX) / this.scale;
+    const clickY = (rawY - this.offsetY) / this.scale;
 
     const btnResume = this.pauseButtons.resume;
     if (btnResume && clickX >= btnResume.x && clickX <= btnResume.x + btnResume.w &&
@@ -406,7 +412,6 @@ export default class Game {
     this.score = 0;
     this.scrollOffset = 0;
 
-    // Restaurar música de fondo continuamente al reiniciar el juego
     if (this.soundMusica) {
       this.soundMusica.volume = 0.51;
       if (this.soundMusica.paused) {
@@ -503,19 +508,25 @@ export default class Game {
 
   resizeCanvas() {
     const dpr = window.devicePixelRatio || 1;
-    this.width = window.innerWidth;
-    this.height = window.innerHeight;
+    const windowW = window.innerWidth;
+    const windowH = window.innerHeight;
 
-    this.canvas.width = this.width * dpr;
-    this.canvas.height = this.height * dpr;
-    this.canvas.style.width = `${this.width}px`;
-    this.canvas.style.height = `${this.height}px`;
+    // Fijar el canvas virtual a 1280x720
+    this.width = 1280;
+    this.height = 720;
+
+    // Calcular escala uniforme y offsets de centrado
+    this.scale = Math.min(windowW / this.width, windowH / this.height);
+    this.offsetX = (windowW - this.width * this.scale) / 2;
+    this.offsetY = (windowH - this.height * this.scale) / 2;
+
+    this.canvas.width = windowW * dpr;
+    this.canvas.height = windowH * dpr;
+    this.canvas.style.width = `${windowW}px`;
+    this.canvas.style.height = `${windowH}px`;
 
     this.ctx.resetTransform();
     this.ctx.scale(dpr, dpr);
-
-    this.ctx.imageSmoothingEnabled = true;
-    this.ctx.imageSmoothingQuality = "high";
 
     const oldLanes = this.lanes ? [...this.lanes] : null;
 
@@ -819,12 +830,8 @@ export default class Game {
       return;
     }
 
-    // Factor ajustado a la frecuencia de 120 Hz para velocidad óptima
     const factor = dt * 120;
 
-    // ==========================================
-    // CONTROL DE SONIDOS DE MARCHA Y MARCHA ATRÁS
-    // ==========================================
     const isGasPressed = this.controls.keys && this.controls.keys.gas;
     const isReversePressed = this.controls.keys && this.controls.keys.reverse;
 
@@ -1081,6 +1088,21 @@ export default class Game {
   }
 
   render() {
+    this.ctx.save();
+
+    // Dibujar fondo oscuro fuera del lienzo del juego
+    this.ctx.fillStyle = "#0a0f1d";
+    this.ctx.fillRect(0, 0, window.innerWidth, window.innerHeight);
+
+    // Aplicar escalado y centrado de las coordenadas 1280x720
+    this.ctx.translate(this.offsetX, this.offsetY);
+    this.ctx.scale(this.scale, this.scale);
+
+    // Recortar al marco exacto de 1280x720
+    this.ctx.beginPath();
+    this.ctx.rect(0, 0, this.width, this.height);
+    this.ctx.clip();
+
     GameRenderer.render(this);
 
     if (this.isCompleted && this.imgTerminado.complete && this.imgTerminado.naturalWidth > 0) {
@@ -1103,5 +1125,7 @@ export default class Game {
       this.ctx.fillRect(0, 0, this.width, this.height);
       this.ctx.restore();
     }
+
+    this.ctx.restore();
   }
 }
