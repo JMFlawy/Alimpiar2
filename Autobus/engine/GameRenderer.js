@@ -283,8 +283,9 @@ export default class GameRenderer {
       let startX = -(game.scrollOffset % tileW);
       if (startX > 0) startX -= tileW;
 
+      // Se redondea X (Math.floor) y se da un pequeño solapamiento (+1.5px) para eliminar la raya vertical de corte entre baldosas
       for (let x = startX; x < game.width + tileW; x += tileW) {
-        game.ctx.drawImage(game.assets.roadImg, x, roadTop, tileW, roadHeight);
+        game.ctx.drawImage(game.assets.roadImg, Math.floor(x), roadTop, tileW + 1.5, roadHeight);
       }
     } else {
       game.ctx.fillStyle = "#2c3e50";
@@ -424,7 +425,7 @@ export default class GameRenderer {
       }
 
       if (stop.type === "PICKUP" && !stop.processed) {
-        // CONDICIONES EStrictAS
+        // CONDICIONES ESTRICTAS
         const isAtStop = game.isBusInStopZone(stop);
         const isBusStopped = Math.abs(game.bus.speed) <= 0.01;
         const canWalkTowardsBus = isAtStop && isBusStopped;
