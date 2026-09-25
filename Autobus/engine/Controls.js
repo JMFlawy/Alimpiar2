@@ -14,6 +14,19 @@ export default class Controls {
     this.initInputs();
     this.createFullscreenButton();
     this.createMobileUI();
+
+    // Activa automáticamente la pantalla completa en móviles al instanciar (elegir autobús)
+    if (this.isMobile) {
+      this.requestFullscreen();
+    }
+  }
+
+  requestFullscreen() {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch((err) => {
+        console.warn(`Pantalla completa no activada: ${err.message}`);
+      });
+    }
   }
 
   createFullscreenButton() {
@@ -50,9 +63,7 @@ export default class Controls {
 
     btn.addEventListener("click", () => {
       if (!document.fullscreenElement) {
-        document.documentElement.requestFullscreen().catch((err) => {
-          console.error(`Error al intentar activar pantalla completa: ${err.message}`);
-        });
+        this.requestFullscreen();
       } else {
         if (document.exitFullscreen) {
           document.exitFullscreen();
