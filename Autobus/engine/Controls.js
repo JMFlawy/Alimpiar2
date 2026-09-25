@@ -157,7 +157,7 @@ export default class Controls {
       // Estilo transparente tipo cristal
       btn.style.backgroundColor = "rgba(255, 255, 255, 0.18)";
       btn.style.border = "2px solid rgba(255, 255, 255, 0.45)";
-      btn.style.borderRadius = "14px";
+      btn.style.borderRadius = "10px";
       btn.style.color = "#ffffff";
       btn.style.fontWeight = "bold";
       btn.style.backdropFilter = "blur(5px)";
@@ -172,50 +172,50 @@ export default class Controls {
 
     const safeBottom = "env(safe-area-inset-bottom, 0px)";
 
-    // --- IZQUIERDA: CRUCETA DE DIRECCIONES ---
+    // --- IZQUIERDA: CRUCETA COMPACTA DE DIRECCIONES (44x44px) ---
     this.btnUp = makeBtn("▲", {
-      bottom: `calc(130px + ${safeBottom})`,
-      left: "75px",
-      width: "56px",
-      height: "56px",
-      fontSize: "24px"
+      bottom: `calc(98px + ${safeBottom})`,
+      left: "55px",
+      width: "44px",
+      height: "44px",
+      fontSize: "18px"
     });
 
     this.btnReverse = makeBtn("◀", {
-      bottom: `calc(70px + ${safeBottom})`,
-      left: "15px",
-      width: "56px",
-      height: "56px",
-      fontSize: "24px"
+      bottom: `calc(54px + ${safeBottom})`,
+      left: "10px",
+      width: "44px",
+      height: "44px",
+      fontSize: "18px"
     });
 
     this.btnGas = makeBtn("▶", {
-      bottom: `calc(70px + ${safeBottom})`,
-      left: "135px",
-      width: "56px",
-      height: "56px",
-      fontSize: "24px"
+      bottom: `calc(54px + ${safeBottom})`,
+      left: "100px",
+      width: "44px",
+      height: "44px",
+      fontSize: "18px"
     });
 
     this.btnDown = makeBtn("▼", {
       bottom: `calc(10px + ${safeBottom})`,
-      left: "75px",
-      width: "56px",
-      height: "56px",
-      fontSize: "24px"
+      left: "55px",
+      width: "44px",
+      height: "44px",
+      fontSize: "18px"
     });
 
     // --- ICONOS VECTORIALES ---
-    const wiperIcon = `<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 18c0-5.5 4.5-10 10-10s10 4.5 10 10"/><line x1="12" y1="18" x2="19" y2="9"/></svg>`;
+    const wiperIcon = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 18c0-5.5 4.5-10 10-10s10 4.5 10 10"/><line x1="12" y1="18" x2="19" y2="9"/></svg>`;
 
-    const doorIcon = `<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><line x1="12" y1="3" x2="12" y2="21"/><line x1="7" y1="6" x2="10" y2="6"/><line x1="14" y1="6" x2="17" y2="6"/><circle cx="10" cy="12" r="1" fill="currentColor"/><circle cx="14" cy="12" r="1" fill="currentColor"/></svg>`;
+    const doorIcon = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><line x1="12" y1="3" x2="12" y2="21"/><line x1="7" y1="6" x2="10" y2="6"/><line x1="14" y1="6" x2="17" y2="6"/><circle cx="10" cy="12" r="1" fill="currentColor"/><circle cx="14" cy="12" r="1" fill="currentColor"/></svg>`;
 
     // --- DERECHA: LIMPIAPARABRISAS Y PUERTAS (CIRCULARES) ---
     this.btnWiper = makeBtn(wiperIcon, {
-      bottom: `calc(75px + ${safeBottom})`,
-      right: "20px",
-      width: "56px",
-      height: "56px",
+      bottom: `calc(65px + ${safeBottom})`,
+      right: "15px",
+      width: "48px",
+      height: "48px",
       borderRadius: "50%",
       display: "flex",
       alignItems: "center",
@@ -224,9 +224,9 @@ export default class Controls {
 
     this.btnPassengers = makeBtn(doorIcon, {
       bottom: `calc(10px + ${safeBottom})`,
-      right: "20px",
-      width: "56px",
-      height: "56px",
+      right: "15px",
+      width: "48px",
+      height: "48px",
       borderRadius: "50%",
       display: "flex",
       alignItems: "center",
