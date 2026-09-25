@@ -117,6 +117,7 @@ export default class Game {
     this.nextStopTargetDistance = this.getNewStopDistance();
 
     this.steeringAngle = 0;
+    this.offsetY = 0;
 
     this.resizeCanvas();
     window.addEventListener("resize", () => this.resizeCanvas());
@@ -352,7 +353,6 @@ export default class Game {
     }
     this.isSelectingBus = false;
 
-    // Iniciar música de fondo con el volumen restaurado desde el segundo 2
     if (this.soundMusica) {
       this.soundMusica.volume = 0.51;
       this.soundMusica.currentTime = 2;
@@ -391,8 +391,9 @@ export default class Game {
 
     const rect = this.canvas.getBoundingClientRect();
     const scale = this.scale || 1;
+    const offsetY = this.offsetY || 0;
     const clickX = (e.clientX - rect.left) / scale;
-    const clickY = (e.clientY - rect.top) / scale;
+    const clickY = ((e.clientY - rect.top) - offsetY) / scale;
 
     const btnResume = this.pauseButtons.resume;
     if (btnResume && clickX >= btnResume.x && clickX <= btnResume.x + btnResume.w &&
@@ -529,6 +530,7 @@ export default class Game {
     if (!isMobileDevice && realWidth >= realHeight) {
       // 1. MODO PC / DESKTOP (100% INTACTO ORIGINAL)
       this.scale = 1.0;
+      this.offsetY = 0;
       this.width = realWidth;
       this.height = realHeight;
 
@@ -543,8 +545,9 @@ export default class Game {
       ];
     } else if (realWidth >= realHeight) {
       // 2. MODO MÓVIL HORIZONTAL (LANDSCAPE)
-      // Ajuste de altura lógica a 720px para mantener la misma escala visual que en PC
+      // Mantener 100% intacto como salía hasta ahora
       this.scale = realHeight / 720;
+      this.offsetY = 0;
       this.width = realWidth / this.scale;
       this.height = 720;
 
@@ -559,14 +562,15 @@ export default class Game {
       ];
     } else {
       // 3. MODO MÓVIL VERTICAL (PORTRAIT)
-      // Ancho lógico de 800px para evitar desbordamientos laterales
-      this.scale = realWidth / 800;
-      this.width = 800;
-      this.height = realHeight / this.scale;
+      // Visualización horizontal estilo PC con franjas negras arriba y abajo
+      this.height = 720;
+      this.width = 1280;
+      this.scale = realWidth / this.width;
+      this.offsetY = (realHeight - (this.height * this.scale)) / 2;
 
-      const effectiveRoadHeight = Math.min(this.height * 0.35, 450);
-      const roadTop = this.height - effectiveRoadHeight - 40;
-      const laneSpacing = effectiveRoadHeight / 3;
+      const roadTop = this.height * 0.52;
+      const roadHeight = this.height * 0.44;
+      const laneSpacing = roadHeight / 3;
 
       this.lanes = [
         roadTop + laneSpacing * 0.35,
@@ -579,9 +583,6 @@ export default class Game {
     this.canvas.height = realHeight * dpr;
     this.canvas.style.width = `${realWidth}px`;
     this.canvas.style.height = `${realHeight}px`;
-
-    // APLICACIÓN DIRECTA DEL ESCALADO AL CONTEXTO DEL CANVAS
-    this.ctx.setTransform(dpr * this.scale, 0, 0, dpr * this.scale, 0, 0);
 
     this.ctx.imageSmoothingEnabled = true;
     this.ctx.imageSmoothingQuality = "high";
@@ -1136,9 +1137,21 @@ export default class Game {
   render() {
     const dpr = window.devicePixelRatio || 1;
     const currentScale = this.scale || 1;
+    const offsetY = this.offsetY || 0;
 
-    // Asegura el escalado constante en cada frame de renderizado
-    this.ctx.setTransform(dpr * currentScale, 0, 0, dpr * currentScale, 0, 0);
+    // 1. Limpieza completa del canvas con fondo negro (letterboxing)
+    this.ctx.setTransform(1, 0, 0, 1, 0, 0);
+    this.ctx.fillStyle = "#000000";
+    this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+
+    // 2. Aplicar la transformación de renderizado centrada verticalmente
+    this.ctx.setTransform(dpr * currentScale, 0, 0, dpr * currentScale, 0, dpr * offsetY);
+
+    // 3. Recorte delimitado al área lógica del juego
+    this.ctx.save();
+    this.ctx.beginPath();
+    this.ctx.rect(0, 0, this.width, this.height);
+    this.ctx.clip();
 
     GameRenderer.render(this);
 
@@ -1162,5 +1175,7 @@ export default class Game {
       this.ctx.fillRect(0, 0, this.width, this.height);
       this.ctx.restore();
     }
+
+    this.ctx.restore();
   }
 }
