@@ -120,6 +120,7 @@ export default class Game {
 
     this.resizeCanvas();
     window.addEventListener("resize", () => this.resizeCanvas());
+    window.addEventListener("orientationchange", () => setTimeout(() => this.resizeCanvas(), 200));
 
     window.addEventListener("keydown", (e) => {
       if (e.key === "Escape" || e.key === "Esc") {
@@ -149,6 +150,8 @@ export default class Game {
     video.src = "assets/intro.mp4";
     video.autoplay = true;
     video.playsInline = true;
+    video.setAttribute("playsinline", "");
+    video.setAttribute("webkit-playsinline", "");
 
     Object.assign(video.style, {
       position: "fixed",
@@ -195,6 +198,7 @@ export default class Game {
     menuOverlay.style.height = "100dvh";
     menuOverlay.style.backgroundColor = "rgba(10, 15, 29, 0.94)";
     menuOverlay.style.backdropFilter = "blur(12px)";
+    menuOverlay.style.webkitBackdropFilter = "blur(12px)";
     menuOverlay.style.zIndex = "10000";
     menuOverlay.style.display = "flex";
     menuOverlay.style.flexDirection = "column";
@@ -202,9 +206,41 @@ export default class Game {
     menuOverlay.style.justifyContent = "center";
     menuOverlay.style.fontFamily = "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
     menuOverlay.style.color = "#ffffff";
-    menuOverlay.style.padding = "20px";
+    menuOverlay.style.padding = "clamp(12px, 3vh, 24px)";
     menuOverlay.style.boxSizing = "border-box";
     menuOverlay.style.overflowY = "auto";
+
+    // Inyección de estilos responsivos adaptados a PC y Mobile
+    let styleSheet = document.getElementById("bus-menu-styles");
+    if (!styleSheet) {
+      styleSheet = document.createElement("style");
+      styleSheet.id = "bus-menu-styles";
+      styleSheet.innerHTML = `
+        .bus-card {
+          background: linear-gradient(145deg, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.98));
+          border-radius: 20px;
+          padding: clamp(14px, 2.5vw, 24px) clamp(10px, 2vw, 18px);
+          width: clamp(140px, 28vw, 200px);
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: space-between;
+          cursor: pointer;
+          transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+          user-select: none;
+          box-sizing: border-box;
+        }
+        @media (hover: hover) {
+          .bus-card:hover {
+            transform: translateY(-8px) scale(1.04);
+          }
+        }
+        .bus-card:active {
+          transform: scale(0.97);
+        }
+      `;
+      document.head.appendChild(styleSheet);
+    }
 
     const buses = [
       { id: "bus1", name: "Autobús amarillo", img: "assets/bus1.png", color: "#f1c40f" },
@@ -216,47 +252,28 @@ export default class Game {
 
     const cardsHtml = buses.map(b => `
       <div class="bus-card" data-id="${b.id}" style="
-        background: linear-gradient(145deg, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.98));
         border: 3px solid ${b.color};
-        border-radius: 20px;
-        padding: 24px 18px;
-        width: 200px;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: space-between;
-        cursor: pointer;
-        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
         box-shadow: 0 10px 25px -5px ${b.color}40, 0 8px 10px -6px rgba(0, 0, 0, 0.5);
-        user-select: none;
-      "
-      onmouseover="
-        this.style.transform = 'translateY(-8px) scale(1.05)';
-        this.style.boxShadow = '0 20px 35px -5px ${b.color}88, 0 0 25px ${b.color}aa';
-      "
-      onmouseout="
-        this.style.transform = 'translateY(0) scale(1)';
-        this.style.boxShadow = '0 10px 25px -5px ${b.color}40, 0 8px 10px -6px rgba(0,0,0,0.5)';
       ">
         <div style="
           width: 100%;
-          height: 110px;
+          height: clamp(70px, 12vh, 110px);
           display: flex;
           align-items: center;
           justify-content: center;
         ">
           <img src="${b.img}" alt="${b.name}" style="
             max-width: 100%;
-            max-height: 100px;
+            max-height: clamp(60px, 11vh, 100px);
             object-fit: contain;
-            filter: drop-shadow(0 10px 14px rgba(0,0,0,0.6));
+            filter: drop-shadow(0 8px 12px rgba(0,0,0,0.6));
           " />
         </div>
 
         <span style="
-          font-size: 18px;
+          font-size: clamp(14px, 2vw, 18px);
           font-weight: 800;
-          margin-top: 16px;
+          margin-top: clamp(8px, 1.5vh, 16px);
           color: #ffffff;
           text-align: center;
           line-height: 1.25;
@@ -264,15 +281,15 @@ export default class Game {
         ">${b.name}</span>
 
         <button style="
-          margin-top: 18px;
+          margin-top: clamp(10px, 1.8vh, 18px);
           width: 100%;
           background: ${b.color};
           color: #0f172a;
           border: none;
-          padding: 10px 0;
+          padding: clamp(6px, 1vh, 10px) 0;
           border-radius: 12px;
           font-weight: 800;
-          font-size: 14px;
+          font-size: clamp(11px, 1.5vw, 14px);
           text-transform: uppercase;
           letter-spacing: 0.5px;
           cursor: pointer;
@@ -285,24 +302,24 @@ export default class Game {
     `).join("");
 
     menuOverlay.innerHTML = `
-      <div style="text-align: center; margin-bottom: 35px;">
+      <div style="text-align: center; margin-bottom: clamp(16px, 3vh, 35px);">
         <h1 style="
           margin: 0;
-          font-size: 36px;
+          font-size: clamp(22px, 4vw, 36px);
           font-weight: 900;
           letter-spacing: -0.5px;
           text-shadow: 0 4px 20px rgba(0,0,0,0.8);
           display: flex;
           align-items: center;
           justify-content: center;
-          gap: 14px;
+          gap: clamp(8px, 1.5vw, 14px);
         ">
-          <span style="font-size: 42px;">🚌</span> SELECCIONA TU AUTOBÚS
+          <span style="font-size: clamp(26px, 4.5vw, 42px);">🚌</span> SELECCIONA TU AUTOBÚS
         </h1>
         <p style="
-          margin: 10px 0 0 0;
+          margin: 6px 0 0 0;
           color: #94a3b8;
-          font-size: 18px;
+          font-size: clamp(13px, 2vw, 18px);
           font-weight: 500;
         ">Elige tu vehículo para comenzar el recorrido</p>
       </div>
@@ -310,7 +327,7 @@ export default class Game {
       <div style="
         display: flex;
         flex-wrap: wrap;
-        gap: 24px;
+        gap: clamp(12px, 2vw, 24px);
         justify-content: center;
         max-width: 1150px;
         width: 100%;
@@ -516,6 +533,11 @@ export default class Game {
 
     this.ctx.imageSmoothingEnabled = true;
     this.ctx.imageSmoothingQuality = "high";
+
+    // Factor de escala relativo a la altura de referencia (720px PC estándar)
+    // En PC (~700p - 1080p) la escala es ~1.0, manteniendo las proporciones intactas.
+    // En móvil ajusta proporcionalmente la escala de los elementos.
+    this.scale = Math.min(Math.max(this.height / 720, 0.55), 1.4);
 
     const oldLanes = this.lanes ? [...this.lanes] : null;
 
