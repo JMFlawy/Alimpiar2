@@ -198,48 +198,21 @@ export default class Controls {
       fontSize: "24px"
     });
 
-    // --- DERECHA: LIMPIAPARABRISAS Y PUERTAS CIRCULARES ---
-    const wiperIcon = `
-      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M3 18C4.5 11.5 10.5 7.5 12 7.5S19.5 11.5 21 18"/>
-        <line x1="12" y1="18" x2="17.5" y2="9.5"/>
-        <line x1="15.5" y1="8.5" x2="19.5" y2="10.5"/>
-      </svg>
-    `;
-
-    const doorsIcon = `
-      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <rect x="3" y="3" width="18" height="18" rx="2.5" stroke-width="2"/>
-        <line x1="12" y1="3" x2="12" y2="21" stroke-width="2"/>
-        <line x1="7.5" y1="3" x2="7.5" y2="21" stroke-dasharray="2 2"/>
-        <line x1="16.5" y1="3" x2="16.5" y2="21" stroke-dasharray="2 2"/>
-        <circle cx="10" cy="12" r="1.2" fill="#ffffff"/>
-        <circle cx="14" cy="12" r="1.2" fill="#ffffff"/>
-      </svg>
-    `;
-
-    this.btnWiper = makeBtn(wiperIcon, {
-      bottom: `calc(10px + ${safeBottom})`,
-      right: "88px",
-      width: "60px",
-      height: "60px",
-      borderRadius: "50%",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      padding: "0"
+    // --- DERECHA: LIMPIAPARABRISAS Y PUERTAS ---
+    this.btnWiper = makeBtn("🧹 LIMPIAR", {
+      bottom: `calc(75px + ${safeBottom})`,
+      right: "16px",
+      width: "135px",
+      height: "52px",
+      fontSize: "13px"
     });
 
-    this.btnPassengers = makeBtn(doorsIcon, {
+    this.btnPassengers = makeBtn("🚪 PUERTAS", {
       bottom: `calc(10px + ${safeBottom})`,
       right: "16px",
-      width: "60px",
-      height: "60px",
-      borderRadius: "50%",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      padding: "0"
+      width: "135px",
+      height: "52px",
+      fontSize: "13px"
     });
 
     // --- EVENTOS TÁCTILES ---
