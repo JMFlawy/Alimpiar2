@@ -390,8 +390,9 @@ export default class Game {
     if (!this.isPaused || !this.pauseButtons) return;
 
     const rect = this.canvas.getBoundingClientRect();
-    const clickX = e.clientX - rect.left;
-    const clickY = e.clientY - rect.top;
+    const scale = this.scale || 1;
+    const clickX = (e.clientX - rect.left) / scale;
+    const clickY = (e.clientY - rect.top) / scale;
 
     const btnResume = this.pauseButtons.resume;
     if (btnResume && clickX >= btnResume.x && clickX <= btnResume.x + btnResume.w &&
@@ -518,31 +519,19 @@ export default class Game {
 
   resizeCanvas() {
     const dpr = window.devicePixelRatio || 1;
-    this.width = window.innerWidth;
-    this.height = window.innerHeight;
+    const realWidth = window.innerWidth;
+    const realHeight = window.innerHeight;
 
-    this.canvas.width = this.width * dpr;
-    this.canvas.height = this.height * dpr;
-    this.canvas.style.width = `${this.width}px`;
-    this.canvas.style.height = `${this.height}px`;
-
-    this.ctx.resetTransform();
-    this.ctx.scale(dpr, dpr);
-
-    this.ctx.imageSmoothingEnabled = true;
-    this.ctx.imageSmoothingQuality = "high";
+    const isMobileDevice = this.isMobile || (realWidth < 1024 && ('ontouchstart' in window || navigator.maxTouchPoints > 0));
 
     const oldLanes = this.lanes ? [...this.lanes] : null;
 
-    // Detectar si el dispositivo es un móvil/tablet táctil
-    const isMobileDevice = this.isMobile || (this.width < 1024 && ('ontouchstart' in window || navigator.maxTouchPoints > 0));
-
-    // ==========================================
-    // CÁLCULO RESPONSIVO Y PROPORCIONES
-    // ==========================================
-    if (!isMobileDevice && this.width >= this.height) {
+    if (!isMobileDevice && realWidth >= realHeight) {
       // 1. MODO PC / DESKTOP (100% INTACTO ORIGINAL)
       this.scale = 1.0;
+      this.width = realWidth;
+      this.height = realHeight;
+
       const roadTop = this.height * 0.55;
       const roadHeight = this.height * 0.42;
       const laneSpacing = roadHeight / 3;
@@ -552,10 +541,13 @@ export default class Game {
         roadTop + laneSpacing * 1.35,
         roadTop + laneSpacing * 2.35
       ];
-    } else if (this.width >= this.height) {
+    } else if (realWidth >= realHeight) {
       // 2. MODO MÓVIL HORIZONTAL (LANDSCAPE)
-      // Escala estricta ligada a los 720px de altura de referencia
-      this.scale = Math.min(Math.max(this.height / 720, 0.38), 0.68);
+      // Ajuste de altura lógica a 720px para mantener la misma escala visual que en PC
+      this.scale = realHeight / 720;
+      this.width = realWidth / this.scale;
+      this.height = 720;
+
       const roadTop = this.height * 0.52;
       const roadHeight = this.height * 0.44;
       const laneSpacing = roadHeight / 3;
@@ -567,10 +559,13 @@ export default class Game {
       ];
     } else {
       // 3. MODO MÓVIL VERTICAL (PORTRAIT)
-      // Escala ligada al ancho para evitar que el bus ocupe toda la pantalla
-      this.scale = Math.min(Math.max(this.width / 900, 0.35), 0.55);
-      const effectiveRoadHeight = Math.min(this.height * 0.35, this.width * 0.5);
-      const roadTop = this.height - effectiveRoadHeight - (this.height * 0.05);
+      // Ancho lógico de 800px para evitar desbordamientos laterales
+      this.scale = realWidth / 800;
+      this.width = 800;
+      this.height = realHeight / this.scale;
+
+      const effectiveRoadHeight = Math.min(this.height * 0.35, 450);
+      const roadTop = this.height - effectiveRoadHeight - 40;
       const laneSpacing = effectiveRoadHeight / 3;
 
       this.lanes = [
@@ -579,6 +574,17 @@ export default class Game {
         roadTop + laneSpacing * 2.35
       ];
     }
+
+    this.canvas.width = realWidth * dpr;
+    this.canvas.height = realHeight * dpr;
+    this.canvas.style.width = `${realWidth}px`;
+    this.canvas.style.height = `${realHeight}px`;
+
+    // APLICACIÓN DIRECTA DEL ESCALADO AL CONTEXTO DEL CANVAS
+    this.ctx.setTransform(dpr * this.scale, 0, 0, dpr * this.scale, 0, 0);
+
+    this.ctx.imageSmoothingEnabled = true;
+    this.ctx.imageSmoothingQuality = "high";
 
     if (this.bus) {
       this.bus.targetY = this.lanes[this.bus.currentLane];
@@ -1128,6 +1134,12 @@ export default class Game {
   }
 
   render() {
+    const dpr = window.devicePixelRatio || 1;
+    const currentScale = this.scale || 1;
+
+    // Asegura el escalado constante en cada frame de renderizado
+    this.ctx.setTransform(dpr * currentScale, 0, 0, dpr * currentScale, 0, 0);
+
     GameRenderer.render(this);
 
     if (this.isCompleted && this.imgTerminado.complete && this.imgTerminado.naturalWidth > 0) {
