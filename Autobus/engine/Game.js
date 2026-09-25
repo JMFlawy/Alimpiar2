@@ -12,10 +12,10 @@ export default class Game {
 
     this.isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || ('ontouchstart' in window);
 
-    // Resolución virtual fija estándar para mantener proporciones en todos los dispositivos
+    // Configuración de lienzo virtual adaptable
+    this.scale = 1;
     this.width = 1280;
     this.height = 720;
-    this.scale = 1;
     this.offsetX = 0;
     this.offsetY = 0;
 
@@ -379,9 +379,9 @@ export default class Game {
     const rawX = e.clientX - rect.left;
     const rawY = e.clientY - rect.top;
 
-    // Transformar clics en pantalla al espacio del lienzo virtual 1280x720
-    const clickX = (rawX - this.offsetX) / this.scale;
-    const clickY = (rawY - this.offsetY) / this.scale;
+    // Transformación directa al espacio virtual sin offsets
+    const clickX = rawX / this.scale;
+    const clickY = rawY / this.scale;
 
     const btnResume = this.pauseButtons.resume;
     if (btnResume && clickX >= btnResume.x && clickX <= btnResume.x + btnResume.w &&
@@ -511,14 +511,20 @@ export default class Game {
     const windowW = window.innerWidth;
     const windowH = window.innerHeight;
 
-    // Fijar el canvas virtual a 1280x720
-    this.width = 1280;
-    this.height = 720;
+    // Referencia fija de altura virtual (720px) para mantener siempre
+    // las proporciones exactas del autobús, la carretera y los objetos.
+    const BASE_HEIGHT = 720;
 
-    // Calcular escala uniforme y offsets de centrado
-    this.scale = Math.min(windowW / this.width, windowH / this.height);
-    this.offsetX = (windowW - this.width * this.scale) / 2;
-    this.offsetY = (windowH - this.height * this.scale) / 2;
+    // La escala se fija únicamente por la altura de la pantalla
+    this.scale = windowH / BASE_HEIGHT;
+
+    // El ancho virtual se expande dinámicamente según el monitor para llenar
+    // el 100% de la pantalla sin bandas negras ni distorsiones.
+    this.height = BASE_HEIGHT;
+    this.width = windowW / this.scale;
+
+    this.offsetX = 0;
+    this.offsetY = 0;
 
     this.canvas.width = windowW * dpr;
     this.canvas.height = windowH * dpr;
@@ -1090,18 +1096,11 @@ export default class Game {
   render() {
     this.ctx.save();
 
-    // Dibujar fondo oscuro fuera del lienzo del juego
-    this.ctx.fillStyle = "#0a0f1d";
-    this.ctx.fillRect(0, 0, window.innerWidth, window.innerHeight);
+    // Limpia la pantalla
+    this.ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
 
-    // Aplicar escalado y centrado de las coordenadas 1280x720
-    this.ctx.translate(this.offsetX, this.offsetY);
+    // Escala la vista del lienzo proporcionalmente a la altura del dispositivo
     this.ctx.scale(this.scale, this.scale);
-
-    // Recortar al marco exacto de 1280x720
-    this.ctx.beginPath();
-    this.ctx.rect(0, 0, this.width, this.height);
-    this.ctx.clip();
 
     GameRenderer.render(this);
 
