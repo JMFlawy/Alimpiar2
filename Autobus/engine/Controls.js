@@ -162,7 +162,6 @@ export default class Controls {
     const safeBottom = "env(safe-area-inset-bottom, 0px)";
 
     // --- IZQUIERDA: CRUCETA DE DIRECCIONES ---
-    // Arriba (Cambiar de carril hacia arriba)
     this.btnUp = makeBtn("▲", {
       bottom: `calc(130px + ${safeBottom})`,
       left: "75px",
@@ -171,7 +170,6 @@ export default class Controls {
       fontSize: "24px"
     });
 
-    // Izquierda (Atrás / Reversa)
     this.btnReverse = makeBtn("◀", {
       bottom: `calc(70px + ${safeBottom})`,
       left: "15px",
@@ -180,7 +178,6 @@ export default class Controls {
       fontSize: "24px"
     });
 
-    // Derecha (Avanzar)
     this.btnGas = makeBtn("▶", {
       bottom: `calc(70px + ${safeBottom})`,
       left: "135px",
@@ -189,7 +186,6 @@ export default class Controls {
       fontSize: "24px"
     });
 
-    // Abajo (Cambiar de carril hacia abajo)
     this.btnDown = makeBtn("▼", {
       bottom: `calc(10px + ${safeBottom})`,
       left: "75px",
@@ -198,26 +194,35 @@ export default class Controls {
       fontSize: "24px"
     });
 
-    // --- DERECHA: LIMPIAPARABRISAS Y PUERTAS ---
-    this.btnWiper = makeBtn("🧹 LIMPIAR", {
+    // --- ICONOS VECTORIALES ---
+    const wiperIcon = `<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 18c0-5.5 4.5-10 10-10s10 4.5 10 10"/><line x1="12" y1="18" x2="19" y2="9"/></svg>`;
+
+    const doorIcon = `<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><line x1="12" y1="3" x2="12" y2="21"/><line x1="7" y1="6" x2="10" y2="6"/><line x1="14" y1="6" x2="17" y2="6"/><circle cx="10" cy="12" r="1" fill="currentColor"/><circle cx="14" cy="12" r="1" fill="currentColor"/></svg>`;
+
+    // --- DERECHA: LIMPIAPARABRISAS Y PUERTAS (CIRCULARES) ---
+    this.btnWiper = makeBtn(wiperIcon, {
       bottom: `calc(75px + ${safeBottom})`,
-      right: "16px",
-      width: "135px",
-      height: "52px",
-      fontSize: "13px"
+      right: "20px",
+      width: "56px",
+      height: "56px",
+      borderRadius: "50%",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center"
     });
 
-    this.btnPassengers = makeBtn("🚪 PUERTAS", {
+    this.btnPassengers = makeBtn(doorIcon, {
       bottom: `calc(10px + ${safeBottom})`,
-      right: "16px",
-      width: "135px",
-      height: "52px",
-      fontSize: "13px"
+      right: "20px",
+      width: "56px",
+      height: "56px",
+      borderRadius: "50%",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center"
     });
 
     // --- EVENTOS TÁCTILES ---
-
-    // Arriba / Abajo (Cambios de carril directos)
     this.btnUp.addEventListener("touchstart", (e) => {
       e.preventDefault();
       this.game.changeLane(-1);
@@ -228,7 +233,6 @@ export default class Controls {
       this.game.changeLane(1);
     }, { passive: false });
 
-    // Avanzar (Derecha) y Reversa (Izquierda) al mantener pulsado
     const bindHoldKey = (btn, keyName) => {
       btn.addEventListener("touchstart", (e) => {
         e.preventDefault();
