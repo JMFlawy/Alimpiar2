@@ -144,6 +144,15 @@ export default class Game {
     });
 
     this.canvas.addEventListener("click", (e) => this.handleCanvasClick(e));
+    this.canvas.addEventListener("touchstart", (e) => {
+      if (this.isPaused) {
+        if (e.cancelable) e.preventDefault();
+        const touch = e.touches[0] || e.changedTouches[0];
+        if (touch) {
+          this.handleCanvasClick(touch);
+        }
+      }
+    }, { passive: false });
 
     this.initBuildings();
     this.initStreetProps();
@@ -599,6 +608,7 @@ export default class Game {
       this.height = realHeight;
 
       const roadTop = this.height * 0.55;
+      this.roadTop = roadTop;
       const roadHeight = this.height * 0.42;
       const laneSpacing = roadHeight / 3;
 
@@ -615,6 +625,7 @@ export default class Game {
       this.height = 720;
 
       const roadTop = this.height * 0.52;
+      this.roadTop = roadTop;
       const roadHeight = this.height * 0.44;
       const laneSpacing = roadHeight / 3;
 
@@ -631,6 +642,7 @@ export default class Game {
       this.offsetY = (realHeight - (this.height * this.scale)) / 2;
 
       const roadTop = this.height * 0.52;
+      this.roadTop = roadTop;
       const roadHeight = this.height * 0.44;
       const laneSpacing = roadHeight / 3;
 
