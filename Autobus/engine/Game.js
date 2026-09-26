@@ -57,6 +57,7 @@ export default class Game {
     this.imgTerminado.src = "assets/terminado.png";
 
     this.isCompleted = false;
+    this.isFinalVideoPlaying = false;
     this.fadeAlpha = 0; // Control del difuminado a negro
     this.endTimerStarted = false;
 
@@ -205,8 +206,11 @@ export default class Game {
     if (this.soundMusica) this.soundMusica.pause();
     if (this.soundTerminado) this.soundTerminado.pause();
 
+    this.isFinalVideoPlaying = true;
+
     const video = document.createElement("video");
     video.src = "assets/final.mp4";
+    video.preload = "auto";
     video.autoplay = true;
     video.playsInline = true;
     video.setAttribute("playsinline", "");
@@ -228,6 +232,7 @@ export default class Game {
     const finishFinal = () => {
       if (finished) return;
       finished = true;
+      this.isFinalVideoPlaying = false;
       video.remove();
       if (this.onGoToMenu) {
         this.onGoToMenu();
@@ -496,6 +501,7 @@ export default class Game {
 
   resetGame() {
     this.isCompleted = false;
+    this.isFinalVideoPlaying = false;
     this.fadeAlpha = 0;
     this.endTimerStarted = false;
     this.score = 0;
@@ -933,10 +939,12 @@ export default class Game {
     if (isNaN(dt) || dt < 0) dt = 0;
     if (dt > 0.1) dt = 0.1;
 
-    if (!this.isPaused && !this.isSelectingBus) {
-      this.update(dt);
+    if (!this.isFinalVideoPlaying) {
+      if (!this.isPaused && !this.isSelectingBus) {
+        this.update(dt);
+      }
+      this.render();
     }
-    this.render();
 
     requestAnimationFrame(this.loop.bind(this));
   }
