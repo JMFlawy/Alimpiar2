@@ -245,7 +245,7 @@ export default class GameRenderer {
   }
 
   static renderSideView(game) {
-    const roadTop = game.height * 0.55;
+    const roadTop = game.roadTop !== undefined ? game.roadTop : game.height * 0.55;
 
     if (game.assets.bgImg.complete && game.assets.bgImg.naturalWidth > 0) {
       game.ctx.drawImage(game.assets.bgImg, 0, 0, game.width, roadTop);
